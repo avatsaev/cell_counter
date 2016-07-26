@@ -1,5 +1,8 @@
 #! /usr/local/bin/python
 
+#NOTE: /!\ This is a failed experiment /!\
+
+
 import numpy as np
 import cv2
 from pyimagesearch.shapedetector import ShapeDetector

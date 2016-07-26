@@ -94,7 +94,6 @@ ap.add_argument("-max", "--edge-max", required = False,
     help = "Max threshold for edges")
 
 
-
 args = vars(ap.parse_args())
 
 
@@ -118,7 +117,7 @@ opening_morph = opening_morph(cv2.medianBlur(img,5))
 
 # canny edge detection
 edged_img = detect_edges(opening_morph, edge_min, edge_max)
-##cv2.imwrite( "output_pattern/edged.png", edged_img );
+cv2.imwrite( "output_pattern/edged.png", edged_img );
 
 #dilate the edges for better pattern matching
 
@@ -141,38 +140,28 @@ for pt in zip(*loc[::-1]):
     cv2.rectangle(spot_map_img, pt, (pt[0] + template_w, pt[1] + template_h), (0,255,0), 3)
 
 ##cv2.imwrite('output_pattern/res.png',img)
-##cv2.imwrite('output_pattern/spot_map_img.png',spot_map_img)
 
 
 
+#this image contains only the detected areas of droplets
 spot_map_img = cv2.cvtColor(spot_map_img, cv2.COLOR_BGR2GRAY)
-
-# (cnts, _) = cv2.findContours(spot_map_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-# cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
-# screenCnt = None
-#
-# # # loop over our contours
-# for c in cnts:
-#     # approximate the contour
-#     peri = cv2.arcLength(c, True)
-#     approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-#
-#     # if our approximated contour has four points, then
-#     # we can assume that we have found our screen
-#     if len(approx) == 4:
-#         screenCnt = approx
-#         cv2.drawContours(clean_spot_map_img, [screenCnt], -1, (0, 255, 0), 3)
 
 
 cnts = cv2.findContours(spot_map_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
 cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+
 sd = ShapeDetector()
 clean_spot_map_img = np.zeros(img.shape, np.uint8)
 
 # loop over the contours
 spot_n = 0
 
-for c in cnts:
+aprox_contours = [cv2.approxPolyDP(c,epsilon=10.5,closed=True) for c in cnts]
+
+spot_coordinates = []
+
+for c in aprox_contours:
   # compute the center of the contour, then detect the name of the
   # shape using only the contour
   M = cv2.moments(c)
@@ -180,13 +169,19 @@ for c in cnts:
   cY = int((M["m01"] / M["m00"]))
   shape = sd.detect(c)
 
+
+
   if shape == "square" or shape=="rectangle":
 
-
-    # multiply the contour (x, y)-coordinates by the resize ratio,
-    # then draw the contours and the name of the shape on the image
-
     c = c.astype("int")
+
+    #normalize irregular squares
+    c[0][0][0] = c[1][0][0]
+    c[0][0][1] = c[3][0][1]
+    c[1][0][1] = c[2][0][1]
+    c[2][0][0] = c[3][0][0]
+
+    spot_coordinates.append([ c[0][0], c[1][0], c[2][0], c[3][0] ])
 
     cv2.drawContours(clean_spot_map_img, [c], -1, (0, 255, 0), 1)
 
@@ -199,7 +194,7 @@ for c in cnts:
 
 final_overlay_img = dynamic_blend( img,  clean_spot_map_img)
 
-##cv2.imwrite('output_pattern/clean_spot_map_img.png',clean_spot_map_img)
+cv2.imwrite('output_pattern/clean_spot_map_img.png',clean_spot_map_img)
 cv2.imwrite('output_pattern/final_overlay_img.png',final_overlay_img)
 
 print "PATTERN MATCHING DONE"
