@@ -2,9 +2,9 @@
 
 import numpy as np
 import cv2
-from pyimagesearch.shapedetector import ShapeDetector
 import argparse
 import imutils
+from pyimagesearch.shapedetector import ShapeDetector
 
 def show_img(img):
     # cv2.imshow("image",img)
@@ -35,9 +35,12 @@ def bitwise_blend(img1, img2):
     return cv2.add(img1_bg, img2_fg)
 
 def detect_edges(img, min_val=5, max_val=22):
+
+    min_val = float(min_val)
+    max_val = float(max_val)
+
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return cv2.Canny(gray_img, min_val,max_val)
-
 
 def dynamic_blend(img1, img2):
 
@@ -74,14 +77,39 @@ def dilate(img, iterations=2):
 
 #####################################################################################
 
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", required = True,
+    help = "Path to the query image")
+
+ap.add_argument("-t", "--template", required = True,
+    help = "Path to the template image")
+
+
+ap.add_argument("-min", "--edge-min", required = False,
+    help = "Min threshold for edges")
+
+
+ap.add_argument("-max", "--edge-max", required = False,
+    help = "Max threshold for edges")
+
+
+
+args = vars(ap.parse_args())
+
+
+img = cv2.imread(args["image"])
+
+
+edge_min = args["edge_min"] if args["edge_min"] else 5
+edge_max = args["edge_max"] if args["edge_max"] else 22
+
+
+#img = cv2.imread('contours_sample_2_raw.jpg')
+template = cv2.imread(args["template"], 0)
+
+
 print("processing edges...")
-
-
-img = cv2.imread('contours_sample_1_raw.jpg')
-
-template = cv2.imread('spot_pattern_2.jpg', 0)
-w, h = template.shape[::-1]
-ratio = 1
 
 #opening morph to remove points
 opening_morph = opening_morph(cv2.medianBlur(img,5))
@@ -89,13 +117,13 @@ opening_morph = opening_morph(cv2.medianBlur(img,5))
 ##cv2.imwrite( "output_pattern/opening_morph.png", opening_morph );
 
 # canny edge detection
-edged_img = detect_edges(opening_morph)
+edged_img = detect_edges(opening_morph, edge_min, edge_max)
 ##cv2.imwrite( "output_pattern/edged.png", edged_img );
 
 #dilate the edges for better pattern matching
 
 dilated_img  = dilate(edged_img)
-##cv2.imwrite( "output_pattern/dilated.png", dilated_img );
+cv2.imwrite( "output_pattern/dilated.png", dilated_img );
 
 print "detecting spots..."
 
@@ -107,9 +135,10 @@ loc = np.where( res >= threshold)
 
 print "laying out spots.."
 spot_map_img = np.zeros(img.shape, np.uint8)
+template_w, template_h = template.shape[::-1]
 
 for pt in zip(*loc[::-1]):
-    cv2.rectangle(spot_map_img, pt, (pt[0] + w, pt[1] + h), (0,255,0), 3)
+    cv2.rectangle(spot_map_img, pt, (pt[0] + template_w, pt[1] + template_h), (0,255,0), 3)
 
 ##cv2.imwrite('output_pattern/res.png',img)
 ##cv2.imwrite('output_pattern/spot_map_img.png',spot_map_img)
@@ -147,8 +176,8 @@ for c in cnts:
   # compute the center of the contour, then detect the name of the
   # shape using only the contour
   M = cv2.moments(c)
-  cX = int((M["m10"] / M["m00"]) * ratio)
-  cY = int((M["m01"] / M["m00"]) * ratio)
+  cX = int((M["m10"] / M["m00"]))
+  cY = int((M["m01"] / M["m00"]))
   shape = sd.detect(c)
 
   if shape == "square" or shape=="rectangle":
@@ -167,10 +196,6 @@ for c in cnts:
     cv2.putText(clean_spot_map_img, "Cell count:", (cX-80, cY-10), cv2.FONT_HERSHEY_DUPLEX, 0.74, (255, 255, 255), 1)
     cv2.putText(clean_spot_map_img, "0", (cX-80, cY+35), cv2.FONT_HERSHEY_DUPLEX, 0.84, (255, 255, 255), 2)
     spot_n += 1
-
-
-  # show the output image
-
 
 final_overlay_img = dynamic_blend( img,  clean_spot_map_img)
 
