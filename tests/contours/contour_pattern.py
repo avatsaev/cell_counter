@@ -71,7 +71,7 @@ def opening_morph(img):
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
 def dilate(img, iterations=1):
-    kernel = np.ones((2,2 ),np.uint8)
+    kernel = np.ones((3,3),np.uint8)
     return cv2.dilate(img,kernel,iterations = iterations)
 
 
