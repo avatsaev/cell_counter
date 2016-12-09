@@ -71,8 +71,34 @@ def opening_morph(img):
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
 def dilate(img, iterations=2):
-    kernel = np.ones((5,5 ),np.uint8)
+    kernel = np.ones((3,3 ),np.uint8)
     return cv2.dilate(img,kernel,iterations = iterations)
+
+
+def auto_canny(image, sigma=0.33):
+	# compute the median of the single channel pixel intensities
+
+
+	# return the edged image
+	return edged
+
+
+def auto_canny_edge(image, sigma=0.30):
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+
+    # apply Canny edge detection using a wide threshold, tight
+    # threshold, and automatically determined threshold
+
+    v = np.median(blurred)
+
+    # apply automatic Canny edge detection using the computed median
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v))
+    auto = cv2.Canny(blurred, lower, upper)
+
+    return auto
 
 
 #####################################################################################
@@ -85,13 +111,13 @@ ap.add_argument("-i", "--image", required = True,
 ap.add_argument("-t", "--template", required = True,
     help = "Path to the template image")
 
-
-ap.add_argument("-min", "--edge-min", required = False,
-    help = "Min threshold for edges")
-
-
-ap.add_argument("-max", "--edge-max", required = False,
-    help = "Max threshold for edges")
+#
+# ap.add_argument("-min", "--edge-min", required = False,
+#     help = "Min threshold for edges")
+#
+#
+# ap.add_argument("-max", "--edge-max", required = False,
+#     help = "Max threshold for edges")
 
 
 args = vars(ap.parse_args())
@@ -99,9 +125,6 @@ args = vars(ap.parse_args())
 
 img = cv2.imread(args["image"])
 
-
-edge_min = args["edge_min"] if args["edge_min"] else 5
-edge_max = args["edge_max"] if args["edge_max"] else 22
 
 
 #img = cv2.imread('contours_sample_2_raw.jpg')
@@ -116,8 +139,9 @@ opening_morph = opening_morph(cv2.medianBlur(img,5))
 ##cv2.imwrite( "output_pattern/opening_morph.png", opening_morph );
 
 # canny edge detection
-edged_img = detect_edges(opening_morph, edge_min, edge_max)
+edged_img = auto_canny_edge(opening_morph)
 cv2.imwrite( "output_pattern/edged.png", edged_img );
+
 
 #dilate the edges for better pattern matching
 
@@ -169,8 +193,6 @@ for c in aprox_contours:
   cY = int((M["m01"] / M["m00"]))
   shape = sd.detect(c)
 
-
-
   if shape == "square" or shape=="rectangle":
 
     c = c.astype("int")
@@ -198,3 +220,16 @@ cv2.imwrite('output_pattern/clean_spot_map_img.png',clean_spot_map_img)
 cv2.imwrite('output_pattern/final_overlay_img.png',final_overlay_img)
 
 print "PATTERN MATCHING DONE"
+
+
+# cmake -D CMAKE_BUILD_TYPE=RELEASE \
+#     -D CMAKE_INSTALL_PREFIX=/usr/local \
+#     -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+#     -D PYTHON2_LIBRARY=/usr/local/Cellar/python/2.7.12_2/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config/libpython2.7.dylib  \
+#     -D PYTHON2_INCLUDE_DIR=/usr/local/Cellar/python/2.7.12_2/Frameworks/Python.framework/Versions/2.7/include/python2.7/ \
+#     -D PYTHON2_EXECUTABLE=$VIRTUAL_ENV/bin/python \
+#     -D BUILD_opencv_python2=ON \
+#     -D BUILD_opencv_python3=OFF \
+#     -D INSTALL_PYTHON_EXAMPLES=ON \
+#     -D INSTALL_C_EXAMPLES=OFF \
+#     -D BUILD_EXAMPLES=ON ..
