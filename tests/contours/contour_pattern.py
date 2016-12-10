@@ -71,17 +71,16 @@ def opening_morph(img):
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
 def dilate(img, iterations=1):
-    kernel = np.ones((3,3),np.uint8)
+    kernel = np.ones((5,5),np.uint8)
     return cv2.dilate(img,kernel,iterations = iterations)
 
 
 def auto_canny(image, sigma=0.33):
-	# compute the median of the single channel pixel intensities
 
+    # compute the median of the single channel pixel intensities
 
-	# return the edged image
-	return edged
-
+    # return the edged image
+    return edged
 
 def auto_canny_edge(image, sigma=0.30):
 
@@ -99,6 +98,22 @@ def auto_canny_edge(image, sigma=0.30):
     auto = cv2.Canny(blurred, lower, upper)
 
     return auto
+
+def histeq(img):
+
+
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+    # convert the YUV image back to RGB format
+    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+
+    #cv2.imshow('Color input image', img)
+    #cv2.imshow('Histogram equalized', img_output)
+
+    return img_output
 
 
 #####################################################################################
@@ -136,10 +151,14 @@ print("processing edges...")
 #opening morph to remove points
 opening_morph = opening_morph(cv2.medianBlur(img,5))
 
+histeq = histeq(opening_morph)
+
+cv2.imwrite( "output_pattern/histeq.png", histeq );
+
 ##cv2.imwrite( "output_pattern/opening_morph.png", opening_morph );
 
 # canny edge detection
-edged_img = auto_canny_edge(opening_morph)
+edged_img = auto_canny_edge(histeq)
 cv2.imwrite( "output_pattern/edged.png", edged_img );
 
 
@@ -155,7 +174,7 @@ res = cv2.matchTemplate(dilated_img,template,cv2.TM_CCOEFF_NORMED)
 
 threshold = 0.19
 loc = np.where( res >= threshold)
-
+print(loc)
 print "laying out spots.."
 spot_map_img = np.zeros(img.shape, np.uint8)
 template_w, template_h = template.shape[::-1]
@@ -163,7 +182,7 @@ template_w, template_h = template.shape[::-1]
 for pt in zip(*loc[::-1]):
     cv2.rectangle(spot_map_img, pt, (pt[0] + template_w, pt[1] + template_h), (0,255,0), 3)
 
-##cv2.imwrite('output_pattern/res.png',img)
+cv2.imwrite('output_pattern/spot_map_img.png',spot_map_img)
 
 
 
