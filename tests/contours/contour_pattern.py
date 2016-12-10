@@ -6,6 +6,9 @@ import argparse
 import imutils
 from pyimagesearch.shapedetector import ShapeDetector
 
+
+## TEST COMMAND: python ./contour_pattern.py -i ./contours_sample_2_raw.jpg  -t ./spot_pattern_2.jpg
+
 def show_img(img):
     # cv2.imshow("image",img)
 
@@ -70,9 +73,50 @@ def opening_morph(img):
     kernel = np.ones((5,5 ), np.uint8)
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
-def dilate(img, iterations=2):
-    kernel = np.ones((5,5 ),np.uint8)
+def dilate(img, iterations=1):
+    kernel = np.ones((5,5),np.uint8)
     return cv2.dilate(img,kernel,iterations = iterations)
+
+
+def auto_canny(image, sigma=0.33):
+
+    # compute the median of the single channel pixel intensities
+
+    # return the edged image
+    return edged
+
+def auto_canny_edge(image, sigma=0.30):
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+
+    # apply Canny edge detection using a wide threshold, tight
+    # threshold, and automatically determined threshold
+
+    v = np.median(blurred)
+
+    # apply automatic Canny edge detection using the computed median
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v))
+    auto = cv2.Canny(blurred, lower, upper)
+
+    return auto
+
+def histeq(img):
+
+
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+    # convert the YUV image back to RGB format
+    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+
+    #cv2.imshow('Color input image', img)
+    #cv2.imshow('Histogram equalized', img_output)
+
+    return img_output
 
 
 #####################################################################################
@@ -85,13 +129,13 @@ ap.add_argument("-i", "--image", required = True,
 ap.add_argument("-t", "--template", required = True,
     help = "Path to the template image")
 
-
-ap.add_argument("-min", "--edge-min", required = False,
-    help = "Min threshold for edges")
-
-
-ap.add_argument("-max", "--edge-max", required = False,
-    help = "Max threshold for edges")
+#
+# ap.add_argument("-min", "--edge-min", required = False,
+#     help = "Min threshold for edges")
+#
+#
+# ap.add_argument("-max", "--edge-max", required = False,
+#     help = "Max threshold for edges")
 
 
 args = vars(ap.parse_args())
@@ -99,9 +143,6 @@ args = vars(ap.parse_args())
 
 img = cv2.imread(args["image"])
 
-
-edge_min = args["edge_min"] if args["edge_min"] else 5
-edge_max = args["edge_max"] if args["edge_max"] else 22
 
 
 #img = cv2.imread('contours_sample_2_raw.jpg')
@@ -113,11 +154,16 @@ print("processing edges...")
 #opening morph to remove points
 opening_morph = opening_morph(cv2.medianBlur(img,5))
 
+histeq = histeq(opening_morph)
+
+cv2.imwrite( "output_pattern/histeq.png", histeq );
+
 ##cv2.imwrite( "output_pattern/opening_morph.png", opening_morph );
 
 # canny edge detection
-edged_img = detect_edges(opening_morph, edge_min, edge_max)
+edged_img = auto_canny_edge(histeq)
 cv2.imwrite( "output_pattern/edged.png", edged_img );
+
 
 #dilate the edges for better pattern matching
 
@@ -131,7 +177,7 @@ res = cv2.matchTemplate(dilated_img,template,cv2.TM_CCOEFF_NORMED)
 
 threshold = 0.19
 loc = np.where( res >= threshold)
-
+print(loc)
 print "laying out spots.."
 spot_map_img = np.zeros(img.shape, np.uint8)
 template_w, template_h = template.shape[::-1]
@@ -139,7 +185,7 @@ template_w, template_h = template.shape[::-1]
 for pt in zip(*loc[::-1]):
     cv2.rectangle(spot_map_img, pt, (pt[0] + template_w, pt[1] + template_h), (0,255,0), 3)
 
-##cv2.imwrite('output_pattern/res.png',img)
+cv2.imwrite('output_pattern/spot_map_img.png',spot_map_img)
 
 
 
@@ -169,8 +215,6 @@ for c in aprox_contours:
   cY = int((M["m01"] / M["m00"]))
   shape = sd.detect(c)
 
-
-
   if shape == "square" or shape=="rectangle":
 
     c = c.astype("int")
@@ -198,3 +242,16 @@ cv2.imwrite('output_pattern/clean_spot_map_img.png',clean_spot_map_img)
 cv2.imwrite('output_pattern/final_overlay_img.png',final_overlay_img)
 
 print "PATTERN MATCHING DONE"
+
+
+# cmake -D CMAKE_BUILD_TYPE=RELEASE \
+#     -D CMAKE_INSTALL_PREFIX=/usr/local \
+#     -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+#     -D PYTHON2_LIBRARY=/usr/local/Cellar/python/2.7.12_2/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config/libpython2.7.dylib  \
+#     -D PYTHON2_INCLUDE_DIR=/usr/local/Cellar/python/2.7.12_2/Frameworks/Python.framework/Versions/2.7/include/python2.7/ \
+#     -D PYTHON2_EXECUTABLE=$VIRTUAL_ENV/bin/python \
+#     -D BUILD_opencv_python2=ON \
+#     -D BUILD_opencv_python3=OFF \
+#     -D INSTALL_PYTHON_EXAMPLES=ON \
+#     -D INSTALL_C_EXAMPLES=OFF \
+#     -D BUILD_EXAMPLES=ON ..
