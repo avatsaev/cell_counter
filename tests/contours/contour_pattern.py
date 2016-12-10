@@ -6,6 +6,9 @@ import argparse
 import imutils
 from pyimagesearch.shapedetector import ShapeDetector
 
+
+## TEST COMMAND: python ./contour_pattern.py -i ./contours_sample_2_raw.jpg  -t ./spot_pattern_2.jpg
+
 def show_img(img):
     # cv2.imshow("image",img)
 
