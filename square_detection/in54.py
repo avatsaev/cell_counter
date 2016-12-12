@@ -101,7 +101,7 @@ def frontiere(g): #definie les frontiere entre les centres de gravite. g = [[cen
 
 # gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/edged.png', cv2.IMREAD_GRAYSCALE)
 # gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
-gray = cv2.imread('./cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
+gray = cv2.imread('../tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
 
 
 minLineLength = 200
@@ -160,7 +160,7 @@ print cl
 print fr
 
 print 'largeur moyen du carre :'
-print 
+print
 
 plotseuil = []
 for i in sumt:
@@ -174,7 +174,7 @@ plt.show()
 cv2.waitKey(0)
 np.transpose(sumt)
 sumt.tofile('foo.csv', sep='\n', format='%10.1f')
-cv2.imwrite('B:/Projets/Python/houghlines5.jpg', imgs)
+cv2.imwrite('./houghlines5.jpg', imgs)
 cv2.waitKey(0)
 
 # faiblesse : le seuil (variable seuil) => definir une heuristigue

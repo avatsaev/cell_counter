@@ -9,6 +9,35 @@ from pyimagesearch.shapedetector import ShapeDetector
 
 ## TEST COMMAND: python ./contour_pattern.py -i ./contours_sample_2_raw.jpg  -t ./spot_pattern_2.jpg
 
+
+def count_cells( img, roi):
+    # Load the spot
+    # [y1:y2, x1:x2]
+    img = img[roi[0][1]:roi[2][1], roi[0][0]:roi[2][0]]
+
+
+    # Separate the RGB channels
+    G = img[:,:,1]
+
+
+    # Binarise the Green channel to separate cells from background
+    ret1,th1 = cv2.threshold(G,64,255,cv2.THRESH_BINARY)
+    #th1 = np.uint8(th1)
+
+    # You need to choose 4 or 8 for connectivity type
+    connectivity = 8
+    # Perform the operation
+    num_labels,labels,stats,centroids = cv2.connectedComponentsWithStats(th1, connectivity, cv2.CV_32S)
+
+
+    # cv2.imshow('color',img)
+    # cv2.imshow('Green',G)
+    # cv2.imshow('bw',th1)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    return num_labels -1
+
 def show_img(img):
     # cv2.imshow("image",img)
 
@@ -177,8 +206,10 @@ res = cv2.matchTemplate(dilated_img,template,cv2.TM_CCOEFF_NORMED)
 
 threshold = 0.19
 loc = np.where( res >= threshold)
-print(loc)
+
+#print(loc)
 print "laying out spots.."
+
 spot_map_img = np.zeros(img.shape, np.uint8)
 template_w, template_h = template.shape[::-1]
 
@@ -186,7 +217,6 @@ for pt in zip(*loc[::-1]):
     cv2.rectangle(spot_map_img, pt, (pt[0] + template_w, pt[1] + template_h), (0,255,0), 3)
 
 cv2.imwrite('output_pattern/spot_map_img.png',spot_map_img)
-
 
 
 #this image contains only the detected areas of droplets
@@ -225,15 +255,23 @@ for c in aprox_contours:
     c[1][0][1] = c[2][0][1]
     c[2][0][0] = c[3][0][0]
 
-    spot_coordinates.append([ c[0][0], c[1][0], c[2][0], c[3][0] ])
+    spot_coords = [ c[0][0], c[1][0], c[2][0], c[3][0] ]
+
+    spot_coordinates.append(spot_coords)
 
     cv2.drawContours(clean_spot_map_img, [c], -1, (0, 255, 0), 1)
 
     spot_name = "Droplet {0}".format(spot_n)
-    cv2.putText(clean_spot_map_img, spot_name, (cX-80, cY-50), cv2.FONT_HERSHEY_PLAIN, 1.7, (255, 255, 255), 1)
 
-    cv2.putText(clean_spot_map_img, "Cell count:", (cX-80, cY-10), cv2.FONT_HERSHEY_DUPLEX, 0.74, (255, 255, 255), 1)
-    cv2.putText(clean_spot_map_img, "0", (cX-80, cY+35), cv2.FONT_HERSHEY_DUPLEX, 0.84, (255, 255, 255), 2)
+    cv2.putText(clean_spot_map_img, spot_name, (cX-80, cY-70), cv2.FONT_HERSHEY_PLAIN, 1., (255, 255, 255), 1)
+
+    cells_label = str(count_cells(img, spot_coords))+  " cell(s)"
+
+    cv2.putText(clean_spot_map_img, cells_label, (cX-80, cY-45), cv2.FONT_HERSHEY_DUPLEX, 0.74, (255, 255, 255), 1)
+
+
+    #cv2.putText(clean_spot_map_img, number_of_cells, (cX-80, cY+35), cv2.FONT_HERSHEY_DUPLEX, 0.84, (255, 255, 255), 2)
+
     spot_n += 1
 
 final_overlay_img = dynamic_blend( img,  clean_spot_map_img)
@@ -242,16 +280,3 @@ cv2.imwrite('output_pattern/clean_spot_map_img.png',clean_spot_map_img)
 cv2.imwrite('output_pattern/final_overlay_img.png',final_overlay_img)
 
 print "PATTERN MATCHING DONE"
-
-
-# cmake -D CMAKE_BUILD_TYPE=RELEASE \
-#     -D CMAKE_INSTALL_PREFIX=/usr/local \
-#     -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
-#     -D PYTHON2_LIBRARY=/usr/local/Cellar/python/2.7.12_2/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config/libpython2.7.dylib  \
-#     -D PYTHON2_INCLUDE_DIR=/usr/local/Cellar/python/2.7.12_2/Frameworks/Python.framework/Versions/2.7/include/python2.7/ \
-#     -D PYTHON2_EXECUTABLE=$VIRTUAL_ENV/bin/python \
-#     -D BUILD_opencv_python2=ON \
-#     -D BUILD_opencv_python3=OFF \
-#     -D INSTALL_PYTHON_EXAMPLES=ON \
-#     -D INSTALL_C_EXAMPLES=OFF \
-#     -D BUILD_EXAMPLES=ON ..
