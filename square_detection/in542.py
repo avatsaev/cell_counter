@@ -177,13 +177,13 @@ def getSquareShape(getpositionG, getpositionH): #renvoi la position des carres, 
 
 # img = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/opening_morph.png')
 
-gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/dilated.png', cv2.IMREAD_GRAYSCALE)
-origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/opening_morph.png')
+# gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/dilated.png', cv2.IMREAD_GRAYSCALE)
+# origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/opening_morph.png')
 
 
-# gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/edged.png', cv2.IMREAD_GRAYSCALE)
+gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/edged.png', cv2.IMREAD_GRAYSCALE)
 # gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
-# origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
+origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
 # gray = cv2.imread('../tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
 #
 # kernel = np.ones((5,5),np.uint8)
@@ -203,7 +203,7 @@ for (x1, x2, y1, y2) in lines[0]:
 # imgs = gray
 print 'Hough termine'
 cv2.imwrite('./houghlines5.jpg', imgs)
-
+imgs = gray
 h, l = imgs.shape
 
 # # # # # # # # # # # # # # # #
@@ -278,7 +278,7 @@ print 'sum haut termine'
 
 
 
-seuilh = np.max(sumh) * 1/2
+seuilh = np.max(sumh) * 0.2
 disth = distances_hb(seuilh, sumh)
 clh = classific(disth)
 IdSquareh = whoIsSquare(clh)
@@ -294,7 +294,7 @@ plt.ylabel('sumH')
 plt.show()
 
 
-seuilg = np.max(sumg) * 1/2
+seuilg = np.max(sumg) * 0.2
 distg = distances_hb(seuilg, sumg)
 clg = classific(distg)
 IdSquareg = whoIsSquare(clg)
@@ -317,7 +317,7 @@ print shape
 for (pt1, pt2) in shape:
     cv2.rectangle(origine, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (255, 0, 0))
 
-cv2.imwrite('end.png', origine)
+cv2.imwrite('end2.png', origine)
 
 print 'classes hautes et gauche'
 print clh
