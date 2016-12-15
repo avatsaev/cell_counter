@@ -3,18 +3,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def funConv(start, length, band, high):
-    res = np.zeros(l, np.uint8)
-    for i in range(start, start + band):
-        if i >= length:
-            break
-        res[i] = high
-    return res
+def getHoughImg(gray): #renvoie un image en NG qui contient les contour des carres determine par la transformee de Hough
+    lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 10, 0, 100)
+
+    imgs = gray * 0
+
+    for (x1, x2, y1, y2) in lines[0]:
+        cv2.line(imgs, (x1, x2), (y1, y2), (255, 255, 255), 1)
+
+    print 'Hough termine'
+
+    return imgs
 
 
-# conv = np.convolve(sumg,[100,100,100,100,100,100,100,100])
+def sumHandG(
+        gethough):  # renvoie le nombre de pixels blancs par colonne, puis par ligne de pixel [[nbr de pix/colonne],[nbr de pix/ligne]]
 
-def distances_hb(seuil, f):
+    h, l = gethough.shape
+    sumg = np.zeros(h, np.uint8)
+    sumh = np.zeros(l, np.uint8)
+    for y in range(0, h):
+        for x in range(0, l):
+            if gethough[y, x] > 126:
+                sumg[y] += 1
+                sumh[x] += 1
+
+    print 'sum termine'
+    return [sumh, sumg]
+
+
+def distances_hb(seuil, f): # renvoie la distance entre chaque pics. le seuil determine a partir de quel valeur on a un "pics" [ periode, periode, ...]
     res = []
     temp = 0
     for i in f:
@@ -41,10 +59,12 @@ def quadra(m):  # moyenne quadratique
 
 # classification barbar
 
-def classific(dist): #envoi les centres de gravite des classes, et leur nombre d'elements [centre, nbr element assoier a ce centre]
+def classific(dist): # renvoi les centres de gravite des classes, et leur nombre d'elements [[centre, nbr element assoier a ce centre], [...], ...]
     sdist = dist
     cl = [[]]  # ensemble de classes
-    echantillonage = 3 # defini la severiter dans le choix de classification ( + c'est petit, + on genere de class, + on est grand, + on est sensible au bruit)
+    echantillonage = 5 # defini la severiter dans le choix de classification ( + c'est petit, + on genere de class, + on est grand, + on est sensible au bruit)
+                        # ==> ici, si echantillonage = 10, on classe toutes les valeurs par multiple de 10,
+                        #ex : [2,10,5,34,6,5,11,35,19] devient [[2,6,5],[10,11,19], [], [34, 35]]
 
     for i in sdist:
         while np.size(cl, 0) <= int(round(i / echantillonage, 0)):
@@ -55,9 +75,11 @@ def classific(dist): #envoi les centres de gravite des classes, et leur nombre d
 
 
 
-         # definition des classes principales, [[nmbre d'elments],[multiple de 10 inferieur],[multiple de 10 superieur]]
+     # definition des classes principales, [[nmbre d'elments],[multiple d'echantillonage inferieur],[multiple d'echantillonage superieur]]
+            # ==> on rassemble toutes les classes qui ne sont pas separees par []
+            # si on reprend notre exemple ex : [[2,6,5],[10,11,19], [], [34, 35]]        devient [[6, [0,1]], [2, [3,3]]
+            #     pour les multiples de 10 :   [   0        1        2      3   ] on rassemble :  [0 et 1]      [3]
     nbcl = []
-
     for i in cl:
         nbcl.append(len(i))
 
@@ -76,10 +98,10 @@ def classific(dist): #envoi les centres de gravite des classes, et leur nombre d
             coord.append([0, 0, 0])
             pos+=1
 
-    # print 'taille des classes [[nmbre d\'elments],[multiple de 10 inferieur],[multiple de 10 superieur]]'
+    # print 'taille des classes [[nmbre d\'elments],[multiple d'echantillonage inferieur],[multiple d'echantillonage superieur]]'
     # print coord
 
-    g = [] #calcul des centres de gravites
+    g = [] #calcul des centres de gravites ou moyenne des periodes classee (c'est pareil =P)
     for clas in coord:
         g.append([0, clas[0]])
         for i in range(clas[1], clas[2]+1):
@@ -87,24 +109,26 @@ def classific(dist): #envoi les centres de gravite des classes, et leur nombre d
             g[pos][0] += sum(cl[i])
         g[pos][0] /= clas[0]
 
-    return g
+    return g #[[centre de gravite de la classe, cardinal de la classe]
 
-def frontiere(g): #definie les frontiere entre les centres de gravite. g = [[centre graviter],[valeur sans importance]]
+
+def frontiere(g): #definie les frontiere entre les centres de gravite. [val frontiere entre la classe 1 et 2, val frontiere entre la classe 2 et 3, ... ]
+                # ==>  g = [centre graviter, valeur sans importance]
     fr = []
     for i in range(0,len(g)-1):
         fr.append((g[i+1][0]+g[i][0])/2)
     return fr
 
 
-def whoIsSquare(classifics):
+def whoIsSquare(classifics): # renvoi la classe qui est la plus suceptible de representer l'ensemble des largeurs de carres [centre gravite, cardinal de la classe]
     toClass = list(classifics)
     c = [0, [0, 0]] # [val,[frontieres de classifictations]]
-    sort = [[0,0,0], [0,0,0], [0,0,0]] # [val, nbrElements, position dans la classification]
+    sort = [[0,0,0], [0,0,0], [0,0,0]] # [val, nbrElements, position dans la classification] On s'atend a ce que 3 classes sortes du lots]
     ireset = 0
-    for s in sort:
+    for s in sort:                          # on prends les trois classes qui reviennent le plus regulierement (le # le + elevee)
         i = ireset
         for [val, nbrEl] in toClass:
-            if s[1] <= nbrEl and nbrEl > 4:
+            if s[1] <= nbrEl and nbrEl > 4: # on considere qu'une classe qui ne possede pas au moins 5 elements n'est pas interressante
                 s[1] = nbrEl
                 s[0] = val
                 s[2] = i
@@ -113,8 +137,13 @@ def whoIsSquare(classifics):
             toClass.pop(s[2]-ireset)
             ireset += 1
 
+    # on obtient 3 classes : [[classe largeur contour], [classe largeur carre], [classe distance entre 2 carres]]
+    #               La plus recurente contient principalement la largeur du contour des carres, mais aussi un peut de bruit.
+    #               les deux suivantes contiennent la largeur de nos carres et la distance entre 2 carres
+    #                   ==> les carres etants plus larges que la distance entre 2 specimens, on choisi de prendre la classe avec
+    #                       le centre de gravitee le plus elevee parmis nos trois candidats.
 
-    f = frontiere(classifics)
+    f = frontiere(classifics) # on obtient les valeurs qui separe les classes
 
     for [val, nbrEl, i] in sort:
         if c[0] <= val:
@@ -129,7 +158,7 @@ def whoIsSquare(classifics):
                 c[1][0] = f[i-1]
                 c[1][1] = f[i]
 
-    return c
+    return c # [ centre de gravitee de la classe largeur carre, [frontiere inferieur de la classe, frontiere superier de la classe]]
 
 def getPosition(sumHorG, seuil, whoSquare): # renvoi les positions de debut et de fin des carres de l'image. [[x1,x2],[x1,x2],...]
                         # ATTENTION !! le seuil DOIT etre le meme que celui utilise pour distances_hb(seuil, sumHorG) !!!!!
@@ -146,13 +175,13 @@ def getPosition(sumHorG, seuil, whoSquare): # renvoi les positions de debut et d
     for i in range(0, len(axe)):
         if (axe[i] > seuil and temp != 1):
             if target[0] < length < target[1]:
-                square.append([start, i]) # peut-etre i-1 ??
+                square.append([start, i])
             start = i
             length = 1
             temp = 1
         elif (axe[i] <= seuil and temp != 2):
             if target[0] < length < target[1]:
-                square.append([start, i]) # peut-etre i-1 ??
+                square.append([start, i])
             start = i
             length = 1
             temp = 2
@@ -161,14 +190,23 @@ def getPosition(sumHorG, seuil, whoSquare): # renvoi les positions de debut et d
 
     return square
 
-def getSquareShape(getpositionG, getpositionH): #renvoi la position des carres, [ [[point sup gauche],[point inf droit]], ...]
+def getSquareShape(getposition): #renvoi la position des carres, [ [[point sup gauche],[point inf droit]], ...]
     shape = []
 
-    for (x1, x2) in getpositionH:
-        for(y1,y2) in getpositionG:
-            shape.append([[x1, y1],[x2, y2]])
+    for (x1, x2) in getposition[0]:
+        for(y1, y2) in getposition[1]:
+            shape.append([[x1, y1], [x2, y2]])
 
     return shape
+
+def drawRect(img, getsquareshape): #dessine en bleu les rectangles contenus dans getsquareshape. getsquareshape = [[pt1, pt2], [pt1,pt2] ...]
+    for (pt1, pt2) in getsquareshape:
+        cv2.rectangle(img, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (255, 0, 0))
+    return img
+
+# kernel = np.ones((5,5),np.uint8)
+# gray = cv2.dilate(edge,kernel,2)
+
 
 ########################################################################################################################
 ########################################################################################################################
@@ -185,144 +223,52 @@ origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/openi
 # gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
 # origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
 # gray = cv2.imread('../tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
-#
-# kernel = np.ones((5,5),np.uint8)
-# gray = cv2.dilate(edge,kernel,2)
 
-minLineLength = 200
-maxLineGap = 15
-lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 10, 0, 100)  # ,minLineLength,maxLineGap)
-
-# print lines
-imgs = gray * 0
-
-for (x1, x2, y1, y2) in lines[0]:
-    cv2.line(imgs, (x1, x2), (y1, y2), (255, 255, 255), 1)
 
 # cv2.imshow('haha',imgs)
 # imgs = gray
-print 'Hough termine'
-cv2.imwrite('./houghlines5.jpg', imgs)
+#
+imgs = getHoughImg(gray) # on retire les principales lignes droites de notre image. on souhaite obtenir des portions majeur de quelques carres
+sumXY = sumHandG(imgs) # on somme tous les pixel suivant les colonnes, puis les lignes.
+                        # ==> on souhaite obtenir des "pics" aux positions des limites des carres
+i = 0
+seuil = [[], []]
+dist = [[], []]
+cl = [[], []]
+IdSquare = [[], []]
+sizes = [[], []]
 
-h, l = imgs.shape
+for sumt in sumXY: #on fait ce travail pour les sommes suivant les colonnes, puis les lignes.
+    seuil[i] = np.max(sumt) * 1/2 # on etablie de maniere empirique le seuil audessus duquel on considere un valeur comme etant un pic. !! trop bas, on a trop de bruit, trop haut, on rate trop de pics !!
+    dist[i] = distances_hb(seuil[i], sumt)  # on calcul la distance entre chaque pics. on souhaite en retirer une periode qui correspondrait a la largeur d'un carre
+    cl[i] = classific(dist[i])              # on classifie les diferentes periodes trouvees
+    IdSquare[i] = whoIsSquare(cl[i])        # on cherche parmis nos classes la-quelle est la plus probable de representer la largeur de nos carres : renvoi [largeur moyen, [frontiere inf, frontiere sup]]
+    sizes[i] = getPosition(sumt, seuil[i], IdSquare[i]) # on recalcul les periodes sur la somme/colonne, et on enregistre la position des periodes correspondants a la classe "largeur carre"
+    i += 1
 
-# # # # # # # # # # # # # # # #
-
-sumg = np.zeros(h, np.uint8)
-for y in range(0, h):
-    for x in range(0, l):
-        if imgs[y, x] > 126:
-            sumg[y] += 1
-
-print 'sum gauche termine'
-
-# # # # # # # # # # # # # # # #
-
-sumh = np.zeros(l, np.uint8)
-for x in range(0, l):
-    for y in range(0, h):
-        if imgs[y, x] > 126:
-            sumh[x] += 1
-
-print 'sum haut termine'
-
-# # # # # # # # # # # # # # # #
+    # plotseuil = [[],[]]    #partie test #######################################
+    # for i in sumt:
+    #     plotseuil.append(seuil[i-1])
+    #
+    # plt.plot(sumt)
+    # plt.plot(plotseuil[i-1])
+    # plt.ylabel('sum')
+    # plt.show()
+    #
+    # print 'classes hautes et gauche'
+    # print cl[i-1]
+    #
+    # print 'classes selectionner (H, G)'
+    # print IdSquare[i-1]
 
 
-# sumt = sumh
-#
-# seuil = np.max(sumt)*0.9# * 1/2
-# dist = distances_hb(seuil, sumt)
-# cl = classific(dist)
-# fr = frontiere(cl)
-# # IdSquare = whoIsSquare(cl)
-# # sizes = getPosition(sumt, seuil, IdSquare)
-#
-#
-#
-# print 'seuil'
-# print seuil
-#
-# print dist
-# print cl
-# print fr
-#
-#
-# # print 'largeur moyen du carre :'
-# # print IdSquare
-#
-# # print 'position des carres'
-# # print sizes
-#
-#
-#
-# plotseuil = []
-# for i in sumt:
-#     plotseuil.append(seuil)
-#
-# plt.plot(sumt)
-# plt.plot(plotseuil)
-# # plt.plot(conv)
-# plt.ylabel('some numbers')
-# plt.show()
-# cv2.waitKey(0)
-# np.transpose(sumt)
-# sumt.tofile('foo.csv', sep='\n', format='%10.1f')
-# cv2.imwrite('./houghlines5.jpg', imgs)
-# cv2.waitKey(0)
+shape = getSquareShape(sizes)
 
+origine = drawRect(origine,shape)
 # faiblesse : le seuil (variable seuil) => definir une heuristigue
 #             eventuellement, il y aurait aussi la variable echantillonage
 
 
 
 
-
-seuilh = np.max(sumh) * 1/2
-disth = distances_hb(seuilh, sumh)
-clh = classific(disth)
-IdSquareh = whoIsSquare(clh)
-sizesh = getPosition(sumh, seuilh, IdSquareh)
-
-plotseuilh = []
-for i in sumh:
-    plotseuilh.append(seuilh)
-
-plt.plot(sumh)
-plt.plot(plotseuilh)
-plt.ylabel('sumH')
-plt.show()
-
-
-seuilg = np.max(sumg) * 1/2
-distg = distances_hb(seuilg, sumg)
-clg = classific(distg)
-IdSquareg = whoIsSquare(clg)
-sizesg = getPosition(sumg, seuilg, IdSquareg)
-
-plotseuilG = []
-for i in sumg:
-    plotseuilG.append(seuilg)
-
-plt.plot(sumg)
-plt.plot(plotseuilG)
-plt.ylabel('sumG')
-plt.show()
-
-shape = getSquareShape(sizesg, sizesh)
-
-
-print shape
-
-for (pt1, pt2) in shape:
-    cv2.rectangle(origine, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (255, 0, 0))
-
 cv2.imwrite('end.png', origine)
-
-print 'classes hautes et gauche'
-print clh
-print clg
-
-print 'classes selectionner (H, G)'
-print IdSquareh
-print IdSquareg
