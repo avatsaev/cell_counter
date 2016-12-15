@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+
+
 def funConv(start, length, band, high):
     res = np.zeros(l, np.uint8)
     for i in range(start, start + band):
@@ -181,13 +184,22 @@ def getSquareShape(getpositionG, getpositionH): #renvoi la position des carres, 
 # origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/opening_morph.png')
 
 
-gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/edged.png', cv2.IMREAD_GRAYSCALE)
-# gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
+# gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/edged.png', cv2.IMREAD_GRAYSCALE)
+gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
 origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
 # gray = cv2.imread('../tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
-#
-# kernel = np.ones((5,5),np.uint8)
-# gray = cv2.dilate(edge,kernel,2)
+
+kernel = np.ones((5,5),np.uint8)
+
+cv2.imshow('jkhufsdeuhkivfdqs', gray)
+cv2.waitKey(0)
+
+for i in range(0,10):
+    gray = cv2.dilate(gray, kernel, 2)
+    gray = cv2.erode(gray, kernel, 2)
+
+cv2.imshow('jkhufsdeuhkivfdqs', gray)
+cv2.waitKey(0)
 
 minLineLength = 200
 maxLineGap = 15
@@ -203,28 +215,24 @@ for (x1, x2, y1, y2) in lines[0]:
 # imgs = gray
 print 'Hough termine'
 cv2.imwrite('./houghlines5.jpg', imgs)
+cv2.imshow('jkhufsdeuhkivfdqs', imgs)
+cv2.waitKey(0)
 imgs = gray
 h, l = imgs.shape
 
 # # # # # # # # # # # # # # # #
-
+sumh = np.zeros(l, np.uint8)
 sumg = np.zeros(h, np.uint8)
 for y in range(0, h):
     for x in range(0, l):
         if imgs[y, x] > 126:
             sumg[y] += 1
+            sumh[x] += 1
 
-print 'sum gauche termine'
+print 'sum termine'
 
 # # # # # # # # # # # # # # # #
 
-sumh = np.zeros(l, np.uint8)
-for x in range(0, l):
-    for y in range(0, h):
-        if imgs[y, x] > 126:
-            sumh[x] += 1
-
-print 'sum haut termine'
 
 # # # # # # # # # # # # # # # #
 
@@ -279,6 +287,15 @@ print 'sum haut termine'
 
 
 seuilh = np.max(sumh) * 0.2
+
+plotseuilh = []
+for i in sumh:
+    plotseuilh.append(seuilh)
+plt.plot(sumh)
+plt.plot(plotseuilh)
+plt.ylabel('sumH')
+plt.show()
+
 disth = distances_hb(seuilh, sumh)
 clh = classific(disth)
 IdSquareh = whoIsSquare(clh)
