@@ -263,11 +263,11 @@ for c in aprox_contours:
 
     spot_name = "Droplet {0}".format(spot_n)
 
-    cv2.putText(clean_spot_map_img, spot_name, (cX-80, cY-70), cv2.FONT_HERSHEY_PLAIN, 1., (255, 255, 255), 1)
+    #cv2.putText(clean_spot_map_img, spot_name, (cX-80, cY-70), cv2.FONT_HERSHEY_PLAIN, 1., (255, 255, 255), 1)
 
-    cells_label = str(count_cells(img, spot_coords))+  " cell(s)"
+    #cells_label = str(count_cells(img, spot_coords))+  " cell(s)"
 
-    cv2.putText(clean_spot_map_img, cells_label, (cX-80, cY-45), cv2.FONT_HERSHEY_DUPLEX, 0.74, (255, 255, 255), 1)
+    #cv2.putText(clean_spot_map_img, cells_label, (cX-80, cY-45), cv2.FONT_HERSHEY_DUPLEX, 0.74, (255, 255, 255), 1)
 
 
     #cv2.putText(clean_spot_map_img, number_of_cells, (cX-80, cY+35), cv2.FONT_HERSHEY_DUPLEX, 0.84, (255, 255, 255), 2)
