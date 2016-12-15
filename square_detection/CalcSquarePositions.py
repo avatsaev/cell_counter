@@ -10,7 +10,7 @@ def openImg(gray): #diminue le bruit de l'image en praticant quelques ouvertures
     return gray
 
 def getHoughImg(gray): #renvoie un image en NG qui contient les contour des carres determine par la transformee de Hough
-    lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 10, 0, 75)
+    lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 100, 0, 75)
 
     imgs = gray * 0
 
@@ -68,7 +68,7 @@ def quadra(m):  # moyenne quadratique
 def classific(dist): # renvoi les centres de gravite des classes, et leur nombre d'elements [[centre, nbr element assoier a ce centre], [...], ...]
     sdist = dist
     cl = [[]]  # ensemble de classes
-    echantillonage = 1 # defini la severiter dans le choix de classification ( + c'est petit, + on genere de class, + on est grand, + on est sensible au bruit)
+    echantillonage = 2 # defini la severiter dans le choix de classification ( + c'est petit, + on genere de class, + on est grand, + on est sensible au bruit)
                         # ==> ici, si echantillonage = 10, on classe toutes les valeurs par multiple de 10,
                         #ex : [2,10,5,34,6,5,11,35,19] devient [[2,6,5],[10,11,19], [], [34, 35]]
 
@@ -237,7 +237,7 @@ IdSquare = [[], []]
 sizes = [[], []]
 
 for sumt in sumXY: #on fait ce travail pour les sommes suivant les colonnes, puis les lignes.
-    seuil[i] = np.max(sumt) * 1/2 # on etablie de maniere empirique le seuil audessus duquel on considere un valeur comme etant un pic. !! trop bas, on a trop de bruit, trop haut, on rate trop de pics !!
+    seuil[i] = np.max(sumt) * 4/6 # on etablie de maniere empirique le seuil audessus duquel on considere un valeur comme etant un pic. !! trop bas, on a trop de bruit, trop haut, on rate trop de pics !!
     dist[i] = distances_hb(seuil[i], sumt)  # on calcul la distance entre chaque pics. on souhaite en retirer une periode qui correspondrait a la largeur d'un carre
     cl[i] = classific(dist[i])              # on classifie les diferentes periodes trouvees
     IdSquare[i] = whoIsSquare(cl[i])        # on cherche parmis nos classes la-quelle est la plus probable de representer la largeur de nos carres : renvoi [largeur moyen, [frontiere inf, frontiere sup]]
@@ -252,7 +252,7 @@ for sumt in sumXY: #on fait ce travail pour les sommes suivant les colonnes, pui
     # plt.plot(plotseuil[i-1])
     # plt.ylabel('sum')
     # plt.show()
-    #
+
     # print 'classes hautes et gauche'
     # print cl[i-1]
     #
@@ -262,11 +262,11 @@ for sumt in sumXY: #on fait ce travail pour les sommes suivant les colonnes, pui
 
 shape = getSquareShape(sizes) # on combine la position des projetes de carres pour identifier leurs positions
 origine = drawRect(origine,shape) # on dessine les carres trouve
-cv2.imwrite('finfin.png', origine) # on enregistre l'image
+cv2.imwrite('B:/Projets/Python/finfin.png', origine) # on enregistre l'image
 
 # la taille des carres est contenus dans IdSquare : [ [largeur suivant X, [] ], [largeur suivant Y, [] ] ]
     # ==> La largeur suivant X et Y peut etre diferent !!! privilegiez la plus grande valeur !!
-        # ==> soit largeur des carre = max(IdSquare[0, 0], IdSquare[1,0])
+        # ==> soit largeur des carre = max( IdSquare[0, 0], IdSquare[1, 0])
 
 
 # faiblesse : le seuil (variable seuil) => definir une heuristigue
