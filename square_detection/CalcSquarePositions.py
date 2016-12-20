@@ -1,29 +1,47 @@
 import cv2
 import numpy as np
+import argparse
 import matplotlib.pyplot as plt
 
-def openImg(gray): #diminue le bruit de l'image en praticant quelques ouvertures
+
+# la fonction "exeCalc(dilated)" execute le scripte et renvoi la positions des carres et la moyenne de la taille des carres detecte.
+# [ [ positions des carres ], moyenne des carres ]
+#         => avec [positions des carres ] = [ [point sup gauche, point inf droit], [point sup ...], ... ]
+#
+# on peut executer le script par console avec les parametres suivants :
+#     - i : path de l'image a detecte (prendre l'image dilate de contour_pattern.py
+#     - p : path de sortie de l'image contenant les carre (defaut, le dossier courrant)
+#     - s : path de l'image sur la-quelle on souhaite dessiner les carre (defaut, une image noir)
+
+
+def openImg(gray):
+    "diminue le bruit de l'image en praticant quelques ouvertures"
     kernel = np.ones((5, 5), np.uint8)
     for i in range(0, 5):
         gray = cv2.dilate(gray, kernel, 5)
         gray = cv2.erode(gray, kernel, 5)
     return gray
 
-def getHoughImg(gray): #renvoie un image en NG qui contient les contour des carres determine par la transformee de Hough
+def getHoughImg(gray):
+    "renvoie un image en NG qui contient les contour des carres determine par la transformee de Hough"
     lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 100, 0, 75)
 
     imgs = gray * 0
 
-    for (x1, x2, y1, y2) in lines[0]:
-        cv2.line(imgs, (x1, x2), (y1, y2), (255, 255, 255), 1)
+    # for (x1, x2, y1, y2) in lines[0]:
+    #     cv2.line(imgs, (x1, x2), (y1, y2), (255, 255, 255), 1)
+
+    for i in lines:
+        cv2.line(imgs, (i[0, 0], i[0, 1]), (i[0, 2], i[0, 3]), (255, 255, 255), 1)
+
 
     print 'Hough termine'
 
     return imgs
 
 
-def sumHandG(
-        gethough):  # renvoie le nombre de pixels blancs par colonne, puis par ligne de pixel [[nbr de pix/colonne],[nbr de pix/ligne]]
+def sumHandG(gethough):
+    "renvoie le nombre de pixels blancs par colonne, puis par ligne de pixel [[nbr de pix/colonne],[nbr de pix/ligne]]"
 
     h, l = gethough.shape
     sumg = np.zeros(h, np.uint8)
@@ -38,7 +56,8 @@ def sumHandG(
     return [sumh, sumg]
 
 
-def distances_hb(seuil, f): # renvoie la distance entre chaque pics. le seuil determine a partir de quel valeur on a un "pics" [ periode, periode, ...]
+def distances_hb(seuil, f):
+    "renvoie la distance entre chaque pics. le seuil determine a partir de quel valeur on a un \"pics\" [ periode, periode, ...]"
     res = []
     temp = 0
     for i in f:
@@ -53,7 +72,8 @@ def distances_hb(seuil, f): # renvoie la distance entre chaque pics. le seuil de
     return res
 
 
-def quadra(m):  # moyenne quadratique
+def quadra(m):
+    "moyenne quadratique"
     a = m
     np.power(a, 2)
     summ = sum(a)
@@ -65,7 +85,8 @@ def quadra(m):  # moyenne quadratique
 
 # classification barbar
 
-def classific(dist): # renvoi les centres de gravite des classes, et leur nombre d'elements [[centre, nbr element assoier a ce centre], [...], ...]
+def classific(dist):
+    "renvoi les centres de gravite des classes, et leur nombre d'elements [[centre, nbr element assoier a ce centre], [...], ...]"
     sdist = dist
     cl = [[]]  # ensemble de classes
     echantillonage = 2 # defini la severiter dans le choix de classification ( + c'est petit, + on genere de class, + on est grand, + on est sensible au bruit)
@@ -118,7 +139,8 @@ def classific(dist): # renvoi les centres de gravite des classes, et leur nombre
     return g #[[centre de gravite de la classe, cardinal de la classe]
 
 
-def frontiere(g): #definie les frontiere entre les centres de gravite. [val frontiere entre la classe 1 et 2, val frontiere entre la classe 2 et 3, ... ]
+def frontiere(g):
+    "definie les frontiere entre les centres de gravite. [val frontiere entre la classe 1 et 2, val frontiere entre la classe 2 et 3, ... ]"
                 # ==>  g = [centre graviter, valeur sans importance]
     fr = []
     for i in range(0,len(g)-1):
@@ -126,7 +148,8 @@ def frontiere(g): #definie les frontiere entre les centres de gravite. [val fron
     return fr
 
 
-def whoIsSquare(classifics): # renvoi la classe qui est la plus suceptible de representer l'ensemble des largeurs de carres [centre gravite, cardinal de la classe]
+def whoIsSquare(classifics):
+    "renvoi la classe qui est la plus suceptible de representer l'ensemble des largeurs de carres [centre gravite, cardinal de la classe]"
     toClass = list(classifics)
     c = [0, [0, 0]] # [val,[frontieres de classifictations]]
     sort = [[0,0,0], [0,0,0], [0,0,0]] # [val, nbrElements, position dans la classification] On s'atend a ce que 3 classes sortes du lots]
@@ -166,8 +189,9 @@ def whoIsSquare(classifics): # renvoi la classe qui est la plus suceptible de re
 
     return c # [ centre de gravitee de la classe largeur carre, [frontiere inferieur de la classe, frontiere superier de la classe]]
 
-def getPosition(sumHorG, seuil, whoSquare): # renvoi les positions de debut et de fin des carres de l'image. [[x1,x2],[x1,x2],...]
-                        # ATTENTION !! le seuil DOIT etre le meme que celui utilise pour distances_hb(seuil, sumHorG) !!!!!
+def getPosition(sumHorG, seuil, whoSquare):
+    "renvoi les positions de debut et de fin des carres de l'image. [[x1,x2],[x1,x2],...]"
+        # ATTENTION !! le seuil DOIT etre le meme que celui utilise pour distances_hb(seuil, sumHorG) !!!!!
     axe = sumHorG
     target = whoSquare[1]
     square = []
@@ -196,7 +220,8 @@ def getPosition(sumHorG, seuil, whoSquare): # renvoi les positions de debut et d
 
     return square
 
-def getSquareShape(getposition): #renvoi la position des carres, [ [[point sup gauche],[point inf droit]], ...]
+def getSquareShape(getposition):
+    "renvoi la position des carres, [ [[point sup gauche],[point inf droit]], ...]"
     shape = []
 
     for (x1, x2) in getposition[0]:
@@ -205,8 +230,9 @@ def getSquareShape(getposition): #renvoi la position des carres, [ [[point sup g
 
     return shape
 
-def drawRect(img, getsquareshape): #dessine en bleu les rectangles contenus de getsquareshape. dans img
-                                        # ==>  getsquareshape = [[pt1, pt2], [pt1,pt2] ...]
+def drawRect(img, getsquareshape):
+    "dessine en bleu les rectangles contenus de getsquareshape. dans img \n\t ==>  getsquareshape = [[pt1, pt2], [pt1,pt2] ...]"
+
     for (pt1, pt2) in getsquareshape:
         cv2.rectangle(img, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (255, 0, 0))
     return img
@@ -221,48 +247,59 @@ def drawRect(img, getsquareshape): #dessine en bleu les rectangles contenus de g
 
 # gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/dilated.png', cv2.IMREAD_GRAYSCALE)
 # origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output/opening_morph.png')
+#     dilated =  cv2.imread('dilated', cv2.IMREAD_GRAYSCALE)
+#     origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
 
-gray = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/output_pattern/dilated.png', cv2.IMREAD_GRAYSCALE)
-origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
+def exeCalc(dilated):
+    "execute le scripte de detection des carres sur l'image de sortie de contour_pattern.py, renvoie [[position des carres],[taille moyenne]]"
 
-gray = openImg(gray) # on filtre un peut l'image avec des ouvertures
-imgs = getHoughImg(gray) # on retire les principales lignes droites de notre image. on souhaite obtenir des portions majeur de quelques carres
-sumXY = sumHandG(imgs) # on somme tous les pixel suivant les colonnes, puis les lignes.
-                        # ==> on souhaite obtenir des "pics" aux positions des limites des carres
-i = 0
-seuil = [[], []]
-dist = [[], []]
-cl = [[], []]
-IdSquare = [[], []]
-sizes = [[], []]
+    dilated = openImg(dilated)   # on filtre un peut l'image avec des ouvertures
+    imgs = getHoughImg(dilated)  # on retire les principales lignes droites de notre image. on souhaite obtenir des portions majeur de quelques carres
+    sumXY = sumHandG(imgs)  # on somme tous les pixel suivant les colonnes, puis les lignes.
+                            # ==> on souhaite obtenir des "pics" aux positions des limites des carres
+    i = 0
+    seuil = [[], []]
+    dist = [[], []]
+    cl = [[], []]
+    IdSquare = [[], []]
+    sizes = [[], []]
 
-for sumt in sumXY: #on fait ce travail pour les sommes suivant les colonnes, puis les lignes.
-    seuil[i] = np.max(sumt) * 4/6 # on etablie de maniere empirique le seuil audessus duquel on considere un valeur comme etant un pic. !! trop bas, on a trop de bruit, trop haut, on rate trop de pics !!
-    dist[i] = distances_hb(seuil[i], sumt)  # on calcul la distance entre chaque pics. on souhaite en retirer une periode qui correspondrait a la largeur d'un carre
-    cl[i] = classific(dist[i])              # on classifie les diferentes periodes trouvees
-    IdSquare[i] = whoIsSquare(cl[i])        # on cherche parmis nos classes la-quelle est la plus probable de representer la largeur de nos carres : renvoi [largeur moyen, [frontiere inf, frontiere sup]]
-    sizes[i] = getPosition(sumt, seuil[i], IdSquare[i]) # on recalcul les periodes sur la somme/colonne, et on enregistre la position des periodes correspondants a la classe "largeur carre"
-    i += 1
+    for sumt in sumXY: #on fait ce travail pour les sommes suivant les colonnes, puis les lignes.
+        seuil[i] = np.max(sumt) * 4/6 # on etablie de maniere empirique le seuil audessus duquel on considere un valeur comme etant un pic. !! trop bas, on a trop de bruit, trop haut, on rate trop de pics !!
+        dist[i] = distances_hb(seuil[i], sumt)  # on calcul la distance entre chaque pics. on souhaite en retirer une periode qui correspondrait a la largeur d'un carre
+        cl[i] = classific(dist[i])              # on classifie les diferentes periodes trouvees
+        IdSquare[i] = whoIsSquare(cl[i])        # on cherche parmis nos classes la-quelle est la plus probable de representer la largeur de nos carres : renvoi [largeur moyen, [frontiere inf, frontiere sup]]
+        sizes[i] = getPosition(sumt, seuil[i], IdSquare[i]) # on recalcul les periodes sur la somme/colonne, et on enregistre la position des periodes correspondants a la classe "largeur carre"
+        i += 1
 
-    # plotseuil = [[], []]    # partie test #######################################
-    # for blblblbl in sumt:
-    #     plotseuil[i-1].append(seuil[i-1])
-    #
-    # plt.plot(sumt)
-    # plt.plot(plotseuil[i-1])
-    # plt.ylabel('sum')
-    # plt.show()
+        # plotseuil = [[], []]    # partie test #######################################
+        # for blblblbl in sumt:
+        #     plotseuil[i-1].append(seuil[i-1])
+        #
+        # plt.plot(sumt)
+        # plt.plot(plotseuil[i-1])
+        # plt.ylabel('sum')
+        # plt.show()
+        #
+        # print 'classes hautes et gauche'
+        # print cl[i-1]
+        #
+        # print 'classes selectionner (H, G)'
+        # print IdSquare[i-1]
 
-    # print 'classes hautes et gauche'
-    # print cl[i-1]
-    #
-    # print 'classes selectionner (H, G)'
-    # print IdSquare[i-1]
 
+    shape = getSquareShape(sizes) # on combine la position x et y des carres pour identifier leurs positions
+    mean = max(IdSquare[0][0], IdSquare[1][0])
 
-shape = getSquareShape(sizes) # on combine la position des projetes de carres pour identifier leurs positions
-origine = drawRect(origine,shape) # on dessine les carres trouve
-cv2.imwrite('B:/Projets/Python/finfin.png', origine) # on enregistre l'image
+    return [shape, mean]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres]
+
+def printSquare(shape, support, path):
+    "dessine les carres et les dessines sur le support, et l'enregistre dans le Path, ou a coter (default)"
+    support = drawRect(support, shape)  # on dessine les carres trouve
+    if path is None:
+        cv2.imwrite('./squares.png', support)  # on enregistre l'image
+    else:
+        cv2.imwrite(str(path) + '/squares.png', support)  # on enregistre l'image
 
 # la taille des carres est contenus dans IdSquare : [ [largeur suivant X, [] ], [largeur suivant Y, [] ] ]
     # ==> La largeur suivant X et Y peut etre diferent !!! privilegiez la plus grande valeur !!
@@ -271,6 +308,34 @@ cv2.imwrite('B:/Projets/Python/finfin.png', origine) # on enregistre l'image
 
 # faiblesse : le seuil (variable seuil) => definir une heuristigue
 #             eventuellement, il y aurait aussi la variable echantillonage
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", required = True,
+    help = "Path to the query image")
+
+ap.add_argument("-p", "--path", required = False,
+    help = "Path to print the finding square (default : print in current folder)")
+
+ap.add_argument("-s", "--support", required = False,
+    help = "Path to the image for print finding square (default : with -e, print square with black screen)")
+
+
+args = vars(ap.parse_args())
+
+img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
+(shape, mean) = exeCalc(img)
+
+if args['support'] is None:
+    support = img * 0
+else:
+    support = cv2.imread(args['support'])
+
+printSquare(shape, support, args['path'])
+
 
 
 
