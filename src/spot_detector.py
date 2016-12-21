@@ -314,7 +314,6 @@ def exeCalc(dilated):
     return [shape, mean, interspot_dist]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres]
 
 def printSquare(shape, support, path="output/"):
-    print(shape[0])
     print("SPORT DETECTOR: printSquare...")
     "dessine les carres et les dessines sur le support, et l'enregistre dans le Path, ou a coter (default)"
     support = drawRect(support, shape)  # on dessine les carres trouve
