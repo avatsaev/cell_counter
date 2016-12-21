@@ -352,6 +352,7 @@ def exeCalc(dilated):
             plt.ylabel('sum ligne [pixels blanc]')
             plt.xlabel('Y [pixel]')
             plt.savefig('output/sum_ligne.png')
+            plt.close()
 
 
         # plt.show()    # partie test #######################################
@@ -405,28 +406,28 @@ def printSquare(shape, support, path="output/"):
 ########################################################################################################################
 ########################################################################################################################
 #
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required = True,
-    help = "Path to the query image")
-
-ap.add_argument("-p", "--path", required = False,
-    help = "Path to print the finding square (default : print in current folder)")
-
-ap.add_argument("-s", "--support", required = False,
-    help = "Path to the image for print finding square (default : with -e, print square with black screen)")
-
-
-args = vars(ap.parse_args())
-
-img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
-(shape, mean, intersquare) = exeCalc(img)
-
-if args['support'] is None:
-    support = img * 0
-else:
-    support = cv2.imread(args['support'])
-
-printSquare(shape, support, args['path'])
+# ap = argparse.ArgumentParser()
+# ap.add_argument("-i", "--image", required = True,
+#     help = "Path to the query image")
+#
+# ap.add_argument("-p", "--path", required = False,
+#     help = "Path to print the finding square (default : print in current folder)")
+#
+# ap.add_argument("-s", "--support", required = False,
+#     help = "Path to the image for print finding square (default : with -e, print square with black screen)")
+#
+#
+# args = vars(ap.parse_args())
+#
+# img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
+# (shape, mean, intersquare) = exeCalc(img)
+#
+# if args['support'] is None:
+#     support = img * 0
+# else:
+#     support = cv2.imread(args['support'])
+#
+# printSquare(shape, support, args['path'])
 
 
 #-i C:\Users\Martin\Desktop\IN54\output\dilated.png
