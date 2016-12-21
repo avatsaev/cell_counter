@@ -147,7 +147,7 @@ def classific(dist):
             g[pos][0] += sum(cl[i])
         g[pos][0] /= clas[0]
 
-    return g #[[centre de gravite de la classe, cardinal de la classe]
+    return g #[[centre de gravite de la classe, cardinal de la classe], ...]
 
 
 def frontiere(g):
@@ -190,6 +190,48 @@ def whoIsSquare(classifics):
     for [val, nbrEl, i] in sort:
         if c[0] <= val:
             c[0] = val
+            if i == 0:
+                c[1][0] = 0
+                c[1][1] = f[i]
+            elif i == len(f):
+                c[1][0] = f[i-1]
+                c[1][1] = f[i-1]*1000
+            else:
+                c[1][0] = f[i-1]
+                c[1][1] = f[i]
+
+    return c # [ centre de gravitee de la classe largeur carre, [frontiere inferieur de la classe, frontiere superier de la classe]]
+
+def whoIsInterSquare(classifics):
+    print("SPORT DETECTOR: whoIsInterSquare...")
+    "renvoi la classe qui est la plus suceptible de representer l'ensemble des largeurs entre les carres [centre gravite, cardinal de la classe]"
+    toClass = list(classifics)
+    c = [0, [0, 0]] # [val,[frontieres de classifictations]]
+    maxval = classifics[len(classifics)-1][0]
+    sort = [[maxval,0,0], [maxval,0,0], [maxval,0,0]] # [val, nbrElements, position dans la classification] On s'atend a ce que 3 classes sortes du lots]
+    ireset = 0
+    for s in sort:                          # on prends les trois plus faible classes de centre de gravite
+        i = ireset
+        for [val, nbrEl] in toClass:
+            if s[0] >= val:
+                s[1] = nbrEl
+                s[0] = val
+                s[2] = i
+            i += 1
+        if len(toClass) > 1:
+            toClass.pop(s[2]-ireset)
+            ireset += 1
+
+    # on obtient 3 classes : [[distance bord image -> 1er carrer], [distance bord2 image -> dernier carrer ], [classe distance entre 2 carres]]
+    #               la distance entre deux carres se distingue par un plus grand cardinal
+
+    f = frontiere(classifics) # on obtient les valeurs qui separe les classes
+
+    initCardinal = 0
+    for [val, nbrEl, i] in sort:
+        if initCardinal <= nbrEl:
+            c[0] = val
+            initCardinal = nbrEl
             if i == 0:
                 c[1][0] = 0
                 c[1][1] = f[i]
@@ -306,9 +348,24 @@ def exeCalc(dilated):
 
 
     shape = getSquareShape(sizes) # on combine la position x et y des carres pour identifier leurs positions
-    mean = max(IdSquare[0][0], IdSquare[1][0])
+    meanSquare = max(IdSquare[0][0], IdSquare[1][0])
 
-    return [shape, mean]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres]
+    # calcul de la largeur entre 2 carres ##########################################################
+
+    intersquarexy = [[], []]
+    classintersquarexy = [[], []]
+    meanInterSquarexy = [0,0]
+    i = 0
+    for s in sizes:
+        for j in range(1, len(s)):
+            intersquarexy[i].append(s[j][0] - s[j-1][1])
+        classintersquarexy[i] = classific(intersquarexy[i])
+        meanInterSquarexy[i] = whoIsInterSquare(classintersquarexy[i])[0]
+        i += 1
+
+    interspot_dist = min(meanInterSquarexy)
+
+    return [shape, meanSquare, interspot_dist]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres, moyenne de la distance entre 2 carres]
 
 def printSquare(shape, support, path="output/"):
     print(shape[0])
@@ -330,25 +387,29 @@ def printSquare(shape, support, path="output/"):
 ########################################################################################################################
 ########################################################################################################################
 #
-# ap = argparse.ArgumentParser()
-# ap.add_argument("-i", "--image", required = True,
-#     help = "Path to the query image")
-#
-# ap.add_argument("-p", "--path", required = False,
-#     help = "Path to print the finding square (default : print in current folder)")
-#
-# ap.add_argument("-s", "--support", required = False,
-#     help = "Path to the image for print finding square (default : with -e, print square with black screen)")
-#
-#
-# args = vars(ap.parse_args())
-#
-# img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
-# (shape, mean) = exeCalc(img)
-#
-# if args['support'] is None:
-#     support = img * 0
-# else:
-#     support = cv2.imread(args['support'])
-#
-# printSquare(shape, support, args['path'])
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", required = True,
+    help = "Path to the query image")
+
+ap.add_argument("-p", "--path", required = False,
+    help = "Path to print the finding square (default : print in current folder)")
+
+ap.add_argument("-s", "--support", required = False,
+    help = "Path to the image for print finding square (default : with -e, print square with black screen)")
+
+
+args = vars(ap.parse_args())
+
+img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
+(shape, mean, intersquare) = exeCalc(img)
+
+if args['support'] is None:
+    support = img * 0
+else:
+    support = cv2.imread(args['support'])
+
+printSquare(shape, support, args['path'])
+
+
+#-i C:\Users\Martin\Desktop\IN54\output\dilated.png
+#-i C:/Users/Martin/Desktop/IN54/In54/cell_counter/tests/contours/output/dilated.png
