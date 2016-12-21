@@ -294,7 +294,7 @@ def drawRect(img, getsquareshape):
     "dessine en vert les rectangles contenus de getsquareshape. dans img \n\t ==>  getsquareshape = [[pt1, pt2], [pt1,pt2] ...]"
 
     for (pt1, pt2) in getsquareshape:
-        cv2.rectangle(img, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (0, 255, 0))
+        cv2.rectangle(img, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (0, 255, 0), 1)
     return img
 
 # kernel = np.ones((5,5),np.uint8)
@@ -367,7 +367,8 @@ def exeCalc(dilated):
     shape = getSquareShape(sizes) # on combine la position x et y des carres pour identifier leurs positions
     meanSquare = max(IdSquare[0][0], IdSquare[1][0])
 
-    cv2.imwrite('output/squareFundByHough.png', drawRect(imgs * 0, shape))
+    # squareFundByHough = drawRect(imgs * 0, shape)
+    # cv2.imwrite('output/squareFundByHough.png', squareFundByHough)
 
 
     # calcul de la largeur entre 2 carres ##########################################################
