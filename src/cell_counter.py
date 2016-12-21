@@ -32,6 +32,6 @@ def count_cells( spot_file):
 
 	return num_labels -1
 
-print count_cells("sample_4.jpg")
+#print count_cells("sample_4.jpg")
 # connectedComponentsWithStats
 # http://stackoverflow.com/questions/35854197/how-to-use-opencvs-connected-components-with-stats-in-python

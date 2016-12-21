@@ -81,8 +81,6 @@ def quadra(m):
     return np.sqrt(summ)
 
 
-
-
 # classification barbar
 
 def classific(dist):
@@ -335,7 +333,3 @@ else:
     support = cv2.imread(args['support'])
 
 printSquare(shape, support, args['path'])
-
-
-
-
