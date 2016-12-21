@@ -4,144 +4,11 @@ import cell_counter
 import cv2
 import argparse
 import helper
+import spot_reconstructor
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required = True,
     help = "Path to the image")
-
-
-
-def shape_exists(shapes, shape):
-    exists = False
-
-    for sh in shapes:
-
-        if (shape[0][0] >= sh[0][0] and shape[0][0] <= sh[1][0]) and (shape[0][1] >= sh[0][1] and shape[0][1] <= sh[1][1]):
-            exists = True
-            break
-
-    return exists
-
-def count_lines_cols(shapes):
-
-    lines = 0
-    cols = 0
-
-    new_shapes = shapes[:]
-
-
-    for i in range(len(shapes)-1):
-
-        shape = shapes[i]
-        next_shape = shapes[i+1]
-
-        vertical_distance =  next_shape[0][1] - shape[1][1]
-
-        if vertical_distance<0:
-            cols = cols+1
-            if(lines==0):
-                lines = i
-
-    cols = cols+1
-    lines = lines+1
-
-    return (lines, cols)
-
-def find_origin_spot_shape(shapes, square_size, interspot_dist):
-
-    lines, cols = count_lines_cols(shapes)
-    shape = shapes[0]
-    x = shape[0][0]
-    y = shape[0][1]
-
-    while True:
-
-        if  x - (interspot_dist+square_size) < 0 and y - (interspot_dist+square_size) < 0:
-            break
-        else:
-            if x - (interspot_dist+square_size) >= 0:
-                x = x-(interspot_dist+square_size)
-            if y - (interspot_dist+square_size) >= 0:
-                y = y-(interspot_dist+square_size)
-
-    return [[x,y], [x+square_size, y+square_size]]
-
-
-def get_missing_spots(shapes, square_size, interspot_dist, img):
-
-    o_shape = find_origin_spot_shape(shapes, square_size, interspot_dist)
-    missing_shapes = []
-
-    tolerance = 10
-    (img_rows, img_cols, c) = img.shape
-
-    x = o_shape[0][0]
-    y = o_shape[0][1]
-    tmp_shape = [[x,y], [x+square_size, y+square_size]]
-
-    while True:
-
-
-
-        if(y+tolerance < img_rows and x+tolerance < img_cols):
-
-            if(not shape_exists(shapes, tmp_shape)):
-                missing_shapes.append(tmp_shape)
-
-            if(x + (interspot_dist+square_size+tolerance) > img_cols):
-
-                x = o_shape[0][0]
-                y = y + (interspot_dist+square_size)
-
-            else:
-                x = x + (interspot_dist+square_size)
-
-
-
-            tmp_shape = [[x,y], [x+square_size, y+square_size]]
-
-        else:
-            break
-
-    return shapes+missing_shapes
-
-
-
-
-
-
-
-
-def fill_in_missing_spots(shapes, square_size, interspot_dist):
-
-    cols = 0
-    interspot_dist_tolerance = 10
-    new_shapes = shapes[:]
-
-    for i in range(len(shapes)-1):
-
-        shape = shapes[i]
-        next_shape = shapes[i+1]
-
-        vertical_distance =  next_shape[0][1] - shape[1][1]
-
-        print vertical_distance
-
-        if vertical_distance>interspot_dist+interspot_dist_tolerance:
-
-            print "=="
-            cols = cols + 1
-            #
-            missing_shape_pt_1 = [shape[0][0], shape[0][1]+square_size+interspot_dist]
-            missing_shape_pt_2 = [shape[1][0], shape[1][1]+square_size+interspot_dist]
-            missing_spot = [missing_shape_pt_1, missing_shape_pt_2]
-            print missing_spot
-            print shape
-            new_shapes.insert(i,missing_spot)
-
-    print cols+1
-    return new_shapes
-
 
 
 
@@ -198,7 +65,7 @@ cv2.imwrite( "output/dilated.png", dilated_img );
 #     shapes.insert(0, o_shape)
 
 
-new_shapes = get_missing_spots(shapes, square_size, interspot_dist, img)
+new_shapes = spot_reconstructor.get_missing_spots(shapes, square_size, interspot_dist, img)
 squares = spot_detector.printSquare(new_shapes, img)
 
 
@@ -207,16 +74,16 @@ for i in range(len(new_shapes)):
     shape = new_shapes[i]
 
     #get region of interest (y1:y2, x1:x2)
-    #roi_img = img[shape[0][1]:shape[1][1],shape[0][0]:shape[1][0]]
+    roi_img = img[shape[0][1]:shape[1][1],shape[0][0]:shape[1][0]]
     #count cells
-    #cells_n = cell_counter.count_cells(roi_img)
-    #cells_label = str(cells_n) +  " cell(s)"
+    cells_n = cell_counter.count_cells(roi_img)
+    cells_label = str(cells_n) +  " cell(s)"
     #draw text background
-    #cv2.rectangle(squares, (shape[0][0], shape[0][1]-40), (shape[1][0],  shape[0][1]), (0,255,0), cv2.FILLED)
+    cv2.rectangle(squares, (shape[0][0], shape[0][1]-40), (shape[1][0],  shape[0][1]), (0,255,0), cv2.FILLED)
     #draw label
-    #cv2.putText(squares, cells_label, (shape[0][0]+20, shape[0][1]-12), cv2.FONT_HERSHEY_SIMPLEX, 0.76, (0, 0, 0), 2)
+    cv2.putText(squares, cells_label, (shape[0][0]+20, shape[0][1]-12), cv2.FONT_HERSHEY_SIMPLEX, 0.76, (0, 0, 0), 2)
 
-    cv2.putText(squares, str(i), (shape[0][0]+1, shape[0][1]-28), cv2.FONT_HERSHEY_SIMPLEX, 0.80, (0, 0, 255), 1)
+
 
 
 
