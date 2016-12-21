@@ -5,9 +5,6 @@ import cv2
 import argparse
 import imutils
 
-def say_hello:
-    print "heloo"
-
 def show_img(img):
     # cv2.imshow("image",img)
 
@@ -69,22 +66,19 @@ def dynamic_blend(img1, img2):
     return img1
 
 def opening_morph(img):
+    print("PREPROC: openning morph...")
     kernel = np.ones((5,5 ), np.uint8)
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
 def dilate(img, iterations=1):
+    print("PREPROC: dilating...")
     kernel = np.ones((5,5),np.uint8)
     return cv2.dilate(img,kernel,iterations = iterations)
 
 
-def auto_canny(image, sigma=0.33):
-
-    # compute the median of the single channel pixel intensities
-
-    # return the edged image
-    return edged
-
 def auto_canny_edge(image, sigma=0.30):
+
+    print("PREPROC: auto edge detection...")
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
@@ -102,6 +96,8 @@ def auto_canny_edge(image, sigma=0.30):
     return auto
 
 def histeq(img):
+
+    print("PREPROC: histogram equalization...")
 
 
     img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)

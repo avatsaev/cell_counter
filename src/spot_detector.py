@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 
 def openImg(gray):
+    print("SPORT DETECTOR: openImg...")
     "diminue le bruit de l'image en praticant quelques ouvertures"
     kernel = np.ones((5, 5), np.uint8)
     for i in range(0, 5):
@@ -23,6 +24,13 @@ def openImg(gray):
     return gray
 
 def getHoughImg(gray):
+    print("SPORT DETECTOR: getHoughImg...")
+
+
+    #########
+    #TODO: This function is the biggest bottleneck, needs to be optimised (maybe by distributing the workload on several CPU cores)
+    #########
+
     "renvoie un image en NG qui contient les contour des carres determine par la transformee de Hough"
     lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 100, 0, 75)
 
@@ -35,12 +43,14 @@ def getHoughImg(gray):
         cv2.line(imgs, (i[0, 0], i[0, 1]), (i[0, 2], i[0, 3]), (255, 255, 255), 1)
 
 
-    print 'Hough termine'
 
     return imgs
 
 
 def sumHandG(gethough):
+
+
+    print("SPORT DETECTOR: sumHandG...")
     "renvoie le nombre de pixels blancs par colonne, puis par ligne de pixel [[nbr de pix/colonne],[nbr de pix/ligne]]"
 
     h, l = gethough.shape
@@ -52,11 +62,12 @@ def sumHandG(gethough):
                 sumg[y] += 1
                 sumh[x] += 1
 
-    print 'sum termine'
+
     return [sumh, sumg]
 
 
 def distances_hb(seuil, f):
+    print("SPORT DETECTOR: distances_hb...")
     "renvoie la distance entre chaque pics. le seuil determine a partir de quel valeur on a un \"pics\" [ periode, periode, ...]"
     res = []
     temp = 0
@@ -73,6 +84,7 @@ def distances_hb(seuil, f):
 
 
 def quadra(m):
+    print("SPORT DETECTOR: quadra..")
     "moyenne quadratique"
     a = m
     np.power(a, 2)
@@ -84,6 +96,7 @@ def quadra(m):
 # classification barbar
 
 def classific(dist):
+    print("SPORT DETECTOR: classific...")
     "renvoi les centres de gravite des classes, et leur nombre d'elements [[centre, nbr element assoier a ce centre], [...], ...]"
     sdist = dist
     cl = [[]]  # ensemble de classes
@@ -138,6 +151,7 @@ def classific(dist):
 
 
 def frontiere(g):
+    print("SPORT DETECTOR: frontiere...")
     "definie les frontiere entre les centres de gravite. [val frontiere entre la classe 1 et 2, val frontiere entre la classe 2 et 3, ... ]"
                 # ==>  g = [centre graviter, valeur sans importance]
     fr = []
@@ -147,6 +161,7 @@ def frontiere(g):
 
 
 def whoIsSquare(classifics):
+    print("SPORT DETECTOR: whoIsSquare...")
     "renvoi la classe qui est la plus suceptible de representer l'ensemble des largeurs de carres [centre gravite, cardinal de la classe]"
     toClass = list(classifics)
     c = [0, [0, 0]] # [val,[frontieres de classifictations]]
@@ -188,6 +203,7 @@ def whoIsSquare(classifics):
     return c # [ centre de gravitee de la classe largeur carre, [frontiere inferieur de la classe, frontiere superier de la classe]]
 
 def getPosition(sumHorG, seuil, whoSquare):
+    print("SPORT DETECTOR: getPosition..")
     "renvoi les positions de debut et de fin des carres de l'image. [[x1,x2],[x1,x2],...]"
         # ATTENTION !! le seuil DOIT etre le meme que celui utilise pour distances_hb(seuil, sumHorG) !!!!!
     axe = sumHorG
@@ -219,6 +235,7 @@ def getPosition(sumHorG, seuil, whoSquare):
     return square
 
 def getSquareShape(getposition):
+    print("SPORT DETECTOR: getSquareShape...")
     "renvoi la position des carres, [ [[point sup gauche],[point inf droit]], ...]"
     shape = []
 
@@ -229,10 +246,11 @@ def getSquareShape(getposition):
     return shape
 
 def drawRect(img, getsquareshape):
-    "dessine en bleu les rectangles contenus de getsquareshape. dans img \n\t ==>  getsquareshape = [[pt1, pt2], [pt1,pt2] ...]"
+    print("SPORT DETECTOR: drawRect...")
+    "dessine en vert les rectangles contenus de getsquareshape. dans img \n\t ==>  getsquareshape = [[pt1, pt2], [pt1,pt2] ...]"
 
     for (pt1, pt2) in getsquareshape:
-        cv2.rectangle(img, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (255, 0, 0))
+        cv2.rectangle(img, (pt1[0], pt1[1]), (pt2[0], pt2[1]), (0, 255, 0))
     return img
 
 # kernel = np.ones((5,5),np.uint8)
@@ -249,6 +267,7 @@ def drawRect(img, getsquareshape):
 #     origine = cv2.imread('B:/Projets/Python/cell_counter/tests/contours/contours_sample_3_raw.jpg')
 
 def exeCalc(dilated):
+    print("SPORT DETECTOR: exeCalc...")
     "execute le scripte de detection des carres sur l'image de sortie de contour_pattern.py, renvoie [[position des carres],[taille moyenne]]"
 
     dilated = openImg(dilated)   # on filtre un peut l'image avec des ouvertures
@@ -291,14 +310,14 @@ def exeCalc(dilated):
 
     return [shape, mean]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres]
 
-def printSquare(shape, support, path):
+def printSquare(shape, support, path="output/"):
+    print(shape[0])
+    print("SPORT DETECTOR: printSquare...")
     "dessine les carres et les dessines sur le support, et l'enregistre dans le Path, ou a coter (default)"
     support = drawRect(support, shape)  # on dessine les carres trouve
-    if path is None:
-        cv2.imwrite('./squares.png', support)  # on enregistre l'image
-    else:
-        cv2.imwrite(str(path) + '/squares.png', support)  # on enregistre l'image
+    cv2.imwrite(str(path) + '/squares.png', support)  # on enregistre l'image
 
+    return support
 # la taille des carres est contenus dans IdSquare : [ [largeur suivant X, [] ], [largeur suivant Y, [] ] ]
     # ==> La largeur suivant X et Y peut etre diferent !!! privilegiez la plus grande valeur !!
         # ==> soit largeur des carre = max( IdSquare[0, 0], IdSquare[1, 0])
@@ -310,26 +329,26 @@ def printSquare(shape, support, path):
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
-
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required = True,
-    help = "Path to the query image")
-
-ap.add_argument("-p", "--path", required = False,
-    help = "Path to print the finding square (default : print in current folder)")
-
-ap.add_argument("-s", "--support", required = False,
-    help = "Path to the image for print finding square (default : with -e, print square with black screen)")
-
-
-args = vars(ap.parse_args())
-
-img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
-(shape, mean) = exeCalc(img)
-
-if args['support'] is None:
-    support = img * 0
-else:
-    support = cv2.imread(args['support'])
-
-printSquare(shape, support, args['path'])
+#
+# ap = argparse.ArgumentParser()
+# ap.add_argument("-i", "--image", required = True,
+#     help = "Path to the query image")
+#
+# ap.add_argument("-p", "--path", required = False,
+#     help = "Path to print the finding square (default : print in current folder)")
+#
+# ap.add_argument("-s", "--support", required = False,
+#     help = "Path to the image for print finding square (default : with -e, print square with black screen)")
+#
+#
+# args = vars(ap.parse_args())
+#
+# img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
+# (shape, mean) = exeCalc(img)
+#
+# if args['support'] is None:
+#     support = img * 0
+# else:
+#     support = cv2.imread(args['support'])
+#
+# printSquare(shape, support, args['path'])
