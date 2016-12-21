@@ -308,7 +308,10 @@ def exeCalc(dilated):
     shape = getSquareShape(sizes) # on combine la position x et y des carres pour identifier leurs positions
     mean = max(IdSquare[0][0], IdSquare[1][0])
 
-    return [shape, mean]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres]
+    #distance between the sqares
+    interspot_dist=75
+
+    return [shape, mean, interspot_dist]  # [[ [point sup gauche, point inf droit], [point sup ...], ... ], moyenne de la taille de tous les carres]
 
 def printSquare(shape, support, path="output/"):
     print(shape[0])

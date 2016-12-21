@@ -54,11 +54,13 @@ cv2.imwrite( "output/canny_edged.png", edged_img );
 dilated_img  = preproc.dilate(edged_img)
 cv2.imwrite( "output/dilated.png", dilated_img );
 
-(shapes, mean) = spot_detector.exeCalc(dilated_img)
+(shapes, mean, interspot_dist) = spot_detector.exeCalc(dilated_img)
 
 squares = spot_detector.printSquare(shapes, img)
 
 #
+
+i=1
 for shape in shapes:
 
     #get region of interest (y1:y2, x1:x2)
@@ -71,10 +73,14 @@ for shape in shapes:
     #draw label
     cv2.putText(squares, cells_label, (shape[0][0]+20, shape[0][1]-12), cv2.FONT_HERSHEY_SIMPLEX, 0.76, (0, 0, 0), 2)
 
+    cv2.putText(squares, str(i), (shape[0][0]+1, shape[0][1]-28), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (0, 0, 0), 1)
+
+    i=i+1
+
 
 cv2.imwrite("output/final.jpg", squares)
 
-
+# INFO: test command: python main.py -i test_ressources/contours_sample_1_raw.jpg
 
 
 ###-START-CUT-1
