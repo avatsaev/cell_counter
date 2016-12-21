@@ -80,6 +80,8 @@ def distances_hb(seuil, f):
             temp = 2
         else:
             res[len(res) - 1] += 1
+    res.pop(len(res) - 1)
+    res.pop(0)
     return res
 
 
@@ -316,6 +318,9 @@ def exeCalc(dilated):
     imgs = getHoughImg(dilated)  # on retire les principales lignes droites de notre image. on souhaite obtenir des portions majeur de quelques carres
     sumXY = sumHandG(imgs)  # on somme tous les pixel suivant les colonnes, puis les lignes.
                             # ==> on souhaite obtenir des "pics" aux positions des limites des carres
+
+    cv2.imwrite('output/Filtrage_Hough.png', imgs)
+
     i = 0
     seuil = [[], []]
     dist = [[], []]
@@ -331,14 +336,25 @@ def exeCalc(dilated):
         sizes[i] = getPosition(sumt, seuil[i], IdSquare[i]) # on recalcul les periodes sur la somme/colonne, et on enregistre la position des periodes correspondants a la classe "largeur carre"
         i += 1
 
-        # plotseuil = [[], []]    # partie test #######################################
-        # for blblblbl in sumt:
-        #     plotseuil[i-1].append(seuil[i-1])
-        #
-        # plt.plot(sumt)
-        # plt.plot(plotseuil[i-1])
-        # plt.ylabel('sum')
-        # plt.show()
+        plotseuil = [[], []]
+        for blblblbl in sumt:
+            plotseuil[i-1].append(seuil[i-1])
+
+        plt.plot(sumt)
+        plt.plot(plotseuil[i-1])
+
+        if i == 1:
+            plt.ylabel('sum colonne [pixels blanc]')
+            plt.xlabel('X [pixel]')
+            plt.savefig('output/sum_colonne.png')
+            plt.close()
+        else:
+            plt.ylabel('sum ligne [pixels blanc]')
+            plt.xlabel('Y [pixel]')
+            plt.savefig('output/sum_ligne.png')
+
+
+        # plt.show()    # partie test #######################################
         #
         # print 'classes hautes et gauche'
         # print cl[i-1]
@@ -349,6 +365,9 @@ def exeCalc(dilated):
 
     shape = getSquareShape(sizes) # on combine la position x et y des carres pour identifier leurs positions
     meanSquare = max(IdSquare[0][0], IdSquare[1][0])
+
+    cv2.imwrite('output/squareFundByHough.png', drawRect(imgs * 0, shape))
+
 
     # calcul de la largeur entre 2 carres ##########################################################
 
@@ -386,28 +405,28 @@ def printSquare(shape, support, path="output/"):
 ########################################################################################################################
 ########################################################################################################################
 #
-# ap = argparse.ArgumentParser()
-# ap.add_argument("-i", "--image", required = True,
-#     help = "Path to the query image")
-#
-# ap.add_argument("-p", "--path", required = False,
-#     help = "Path to print the finding square (default : print in current folder)")
-#
-# ap.add_argument("-s", "--support", required = False,
-#     help = "Path to the image for print finding square (default : with -e, print square with black screen)")
-#
-#
-# args = vars(ap.parse_args())
-#
-# img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
-# (shape, mean, intersquare) = exeCalc(img)
-#
-# if args['support'] is None:
-#     support = img * 0
-# else:
-#     support = cv2.imread(args['support'])
-#
-# printSquare(shape, support, args['path'])
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", required = True,
+    help = "Path to the query image")
+
+ap.add_argument("-p", "--path", required = False,
+    help = "Path to print the finding square (default : print in current folder)")
+
+ap.add_argument("-s", "--support", required = False,
+    help = "Path to the image for print finding square (default : with -e, print square with black screen)")
+
+
+args = vars(ap.parse_args())
+
+img = cv2.imread(args["image"], cv2.IMREAD_GRAYSCALE)
+(shape, mean, intersquare) = exeCalc(img)
+
+if args['support'] is None:
+    support = img * 0
+else:
+    support = cv2.imread(args['support'])
+
+printSquare(shape, support, args['path'])
 
 
 #-i C:\Users\Martin\Desktop\IN54\output\dilated.png
