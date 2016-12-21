@@ -18,6 +18,35 @@ def shape_exists(shapes, shape):
 
     return exists
 
+
+def rectify_position(shapes, shape, tolerance=35):
+    #find shape with same x positions+tolerance
+    shape_x_rectified = False
+    shape_y_rectified = False
+
+
+    for tmp_shape in shapes:
+
+        if shape[0][1] >= tmp_shape[0][1]-tolerance and shape[0][1] <= tmp_shape[0][1]+tolerance:
+            shape[0][1] = tmp_shape[0][1]
+            shape_y_rectified = True
+            break
+
+
+    for tmp_shape in shapes:
+
+        if shape[0][0] >= tmp_shape[0][0]-tolerance and shape[0][0] <= tmp_shape[0][0]+tolerance:
+            shape[0][0] = tmp_shape[0][0]
+            shape_x_rectified = True
+            break
+
+    return shape
+
+
+
+
+
+
 def count_lines_cols(shapes):
 
     lines = 0
@@ -82,6 +111,12 @@ def get_missing_spots(shapes, square_size, interspot_dist, img):
         if(y+tolerance < img_rows and x+tolerance < img_cols):
 
             if(not shape_exists(shapes, tmp_shape)):
+
+                tmp_shape = rectify_position(shapes, tmp_shape)
+
+                tmp_shape[1][0] = tmp_shape[0][0]+square_size
+                tmp_shape[1][1] = tmp_shape[0][1]+square_size
+
                 missing_shapes.append(tmp_shape)
 
             if(x + (interspot_dist+square_size+tolerance) > img_cols):
