@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 
+from multiprocessing.pool import ThreadPool
 
 # la fonction "exeCalc(dilated)" execute le scripte et renvoi la positions des carres et la moyenne de la taille des carres detecte.
 # [ [ positions des carres ], moyenne des carres ]
@@ -27,9 +28,7 @@ def getHoughImg(gray):
     print("SPORT DETECTOR: getHoughImg...")
 
 
-    #########
-    #TODO: This function is the biggest bottleneck, needs to be optimised (maybe by distributing the workload on several CPU cores)
-    #########
+
 
     "renvoie un image en NG qui contient les contour des carres determine par la transformee de Hough"
     lines = cv2.HoughLinesP(gray, 0.05, np.pi / 180, 100, 0, 75)
@@ -53,9 +52,48 @@ def sumHandG(gethough):
     print("SPORT DETECTOR: sumHandG...")
     "renvoie le nombre de pixels blancs par colonne, puis par ligne de pixel [[nbr de pix/colonne],[nbr de pix/ligne]]"
 
-    h, l = gethough.shape
+    h, w = gethough.shape
+    l=w
+
+
+
     sumg = np.zeros(h, np.uint8)
     sumh = np.zeros(l, np.uint8)
+
+    inter_h = h/2
+    inter_w = w/2
+
+    pool = ThreadPool(8) #use 4 cpu cores
+
+    # Divide the image in 4 slices, and delegate the workload of each slice to a separate CPU core for parallel execution
+    # wait for results to come back for each core, and then join the results
+    # ---------
+    # | 1 | 2 |
+    # |---|---|
+    # | 3 | 4 |
+    # --------
+
+
+
+    #[y1:y2, x1:x2]
+    slice_1 = gethough[0:inter_h, 0:inter_w]
+
+
+    slice_2 = gethough[0:inter_h, inter_w:w]
+
+
+    slice_3 = gethough[inter_h:h,0:inter_w]
+
+
+    slice_4 = gethough[inter_h:h, inter_w:w]
+
+
+    res = pool.map(sumWhitePixels, [slice_1, slice_2, slice_3, slice_4])
+    pool.close()
+
+    pool.join()
+    print res
+
     for y in range(0, h):
         for x in range(0, l):
             if gethough[y, x] > 126:
@@ -64,6 +102,29 @@ def sumHandG(gethough):
 
 
     return [sumh, sumg]
+
+
+
+
+def sumWhitePixels(img):
+
+    height, width = img.shape
+
+    sum_width = np.zeros(height, np.uint8)
+    sum_heigh = np.zeros(width, np.uint8)
+    print '\nslice start'
+    for y in range(0, height):
+
+        for x in range(0, width):
+
+            if img[y, x] > 126:
+
+                sum_width[y] += 1
+                sum_heigh[x] += 1
+    print '\nslice done...'
+    return [sum_heigh, sum_width]
+
+
 
 
 def distances_hb(seuil, f):
