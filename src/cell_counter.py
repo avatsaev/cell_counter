@@ -6,7 +6,7 @@ import argparse
 
 def count_cells( img):
 
-    print("CELL COUNTER: counting cells in the droplet...")
+    #print("CELL COUNTER: counting cells in the droplet...")
 
     # Separate the RGB channels
     G = img[:,:,1]

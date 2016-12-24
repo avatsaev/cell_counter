@@ -3,7 +3,8 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 
-from multiprocessing.pool import ThreadPool
+from multiprocessing import Process
+from multiprocessing import Queue
 
 # la fonction "exeCalc(dilated)" execute le scripte et renvoi la positions des carres et la moyenne de la taille des carres detecte.
 # [ [ positions des carres ], moyenne des carres ]
@@ -53,17 +54,11 @@ def sumHandG(gethough):
     "renvoie le nombre de pixels blancs par colonne, puis par ligne de pixel [[nbr de pix/colonne],[nbr de pix/ligne]]"
 
     h, w = gethough.shape
-    l=w
 
-
-
-    sumg = np.zeros(h, np.uint8)
-    sumh = np.zeros(l, np.uint8)
 
     inter_h = h/2
     inter_w = w/2
 
-    pool = ThreadPool(8) #use 4 cpu cores
 
     # Divide the image in 4 slices, and delegate the workload of each slice to a separate CPU core for parallel execution
     # wait for results to come back for each core, and then join the results
@@ -73,46 +68,54 @@ def sumHandG(gethough):
     # | 3 | 4 |
     # --------
 
-
-
-    #[y1:y2, x1:x2]
+    #divide image in 4 slices
     slice_1 = gethough[0:inter_h, 0:inter_w]
-
-
     slice_2 = gethough[0:inter_h, inter_w:w]
-
-
     slice_3 = gethough[inter_h:h,0:inter_w]
-
-
     slice_4 = gethough[inter_h:h, inter_w:w]
 
+    #this queue will allow the threads to store the results
+    queue = Queue()
 
-    res = pool.map(sumWhitePixels, [slice_1, slice_2, slice_3, slice_4])
-    pool.close()
+    p1 = Process(target=sumWhitePixels, args=(slice_1, queue))
+    p2 = Process(target=sumWhitePixels, args=(slice_2, queue))
+    p3 = Process(target=sumWhitePixels, args=(slice_3, queue))
+    p4 = Process(target=sumWhitePixels, args=(slice_4, queue))
 
-    pool.join()
-    print res
+    p1.start()
+    p2.start()
+    p3.start()
+    p4.start()
 
-    for y in range(0, h):
-        for x in range(0, l):
-            if gethough[y, x] > 126:
-                sumg[y] += 1
-                sumh[x] += 1
+    p1.join()
+    p2.join()
+    p3.join()
+    p4.join()
+
+    raw_res = [queue.get(), queue.get(), queue.get(), queue.get()]
+
+    sums_w = []
+    sums_h = []
+
+    for res in raw_res:
+
+        sums_h.extend(res[0])
+        sums_w.extend(res[1])
+
+    return [sums_h, sums_w]
 
 
-    return [sumh, sumg]
 
 
-
-
-def sumWhitePixels(img):
+def sumWhitePixels(img,q):
 
     height, width = img.shape
 
     sum_width = np.zeros(height, np.uint8)
     sum_heigh = np.zeros(width, np.uint8)
+
     print '\nslice start'
+
     for y in range(0, height):
 
         for x in range(0, width):
@@ -121,8 +124,10 @@ def sumWhitePixels(img):
 
                 sum_width[y] += 1
                 sum_heigh[x] += 1
+
     print '\nslice done...'
-    return [sum_heigh, sum_width]
+
+    q.put([sum_heigh, sum_width])
 
 
 
