@@ -153,12 +153,19 @@ def classific(dist):
 
 
 def frontiere(g):
+
     print("SPORT DETECTOR: frontiere...")
     "definie les frontiere entre les centres de gravite. [val frontiere entre la classe 1 et 2, val frontiere entre la classe 2 et 3, ... ]"
                 # ==>  g = [centre graviter, valeur sans importance]
     fr = []
-    for i in range(0,len(g)-1):
-        fr.append((g[i+1][0]+g[i][0])/2)
+
+    if len(g)>1:
+
+        for i in range(0,len(g)-1):
+            fr.append((g[i+1][0]+g[i][0])/2)
+    else:
+        fr.append(g[0][0]*1000)
+
     return fr
 
 

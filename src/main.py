@@ -77,7 +77,7 @@ for i in range(len(new_shapes)):
     roi_img = img[shape[0][1]:shape[1][1],shape[0][0]:shape[1][0]]
     #count cells
     cells_n = cell_counter.count_cells(roi_img)
-    cells_label = str(cells_n) +  " cell(s)"
+    cells_label = str(cells_n) +  ""
     #draw text background
     cv2.rectangle(squares, (shape[0][0], shape[0][1]-40), (shape[1][0],  shape[0][1]), (0,255,0), cv2.FILLED)
     #draw label

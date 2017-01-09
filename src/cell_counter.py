@@ -6,7 +6,7 @@ import argparse
 
 def count_cells( img):
 
-    print("CELL COUNTER: counting cells in the droplet...")
+    #print("CELL COUNTER: counting cells in the droplet...")
 
     # Separate the RGB channels
     G = img[:,:,1]
@@ -21,14 +21,13 @@ def count_cells( img):
     # Perform the operation
     num_labels,labels,stats,centroids = cv2.connectedComponentsWithStats(th1, connectivity, cv2.CV_32S)
 
-
     # cv2.imshow('color',img)
     # cv2.imshow('Green',G)
-    # cv2.imshow('bw',th1)
+    # cv2.imshow('bw_'+str(num_labels-2),th1)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
-    return num_labels -1
+    return num_labels-2
 
 #print count_cells("sample_4.jpg")
 # connectedComponentsWithStats
